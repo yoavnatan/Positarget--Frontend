@@ -1,0 +1,119 @@
+import { User, UserCred } from '../../types/user.type'
+import { storageService } from '../async-storage.service'
+
+const STORAGE_KEY_LOGGEDIN_USER = 'loggedinUser'
+
+export const userService = {
+    login,
+    logout,
+    signup,
+    getUsers,
+    getById,
+    remove,
+    update,
+    getLoggedinUser,
+    saveLoggedinUser,
+    getEmptyCredentials,
+}
+
+async function getUsers() {
+    const users: User[] = await storageService.query('user')
+    return users.map(user => {
+        delete user.password
+        return user
+    })
+}
+
+async function getById(userId: string) {
+    return await storageService.get('user', userId)
+}
+
+function remove(userId: string) {
+    return storageService.remove('user', userId)
+}
+
+async function update(user: User) {
+    if (!user._id) throw new Error('User ID is required')
+    const userToUpdate: User = await storageService.get('user', user._id)
+    await storageService.put('user', user)
+
+    // When admin updates other user's details, do not update loggedinUser
+    const loggedinUser = getLoggedinUser()
+    if (loggedinUser._id === userToUpdate._id) saveLoggedinUser(userToUpdate)
+
+    return userToUpdate
+}
+
+async function login(userCred: UserCred) {
+    const users: User[] = await storageService.query('user')
+    const user = users.find(user => user.username === userCred.username)
+
+    if (user) return saveLoggedinUser(user)
+}
+
+async function signup(userCred: UserCred) {
+
+    if (!userCred.username) throw new Error('Username is required')
+
+    const userToSave: User = {
+        username: userCred.username,
+        password: userCred.password,
+        _id: '',
+        firstName: '',
+        lastName: '',
+        isAdmin: false,
+        imgUrl: '',
+        email: userCred.email || '' // Ensure email is always defined
+    }
+    const user = await storageService.post('user', userToSave)
+    return saveLoggedinUser(user)
+}
+
+async function logout() {
+    sessionStorage.removeItem(STORAGE_KEY_LOGGEDIN_USER)
+}
+
+function getLoggedinUser() {
+    const userData = sessionStorage.getItem(STORAGE_KEY_LOGGEDIN_USER)
+    return userData ? JSON.parse(userData) : null
+}
+
+function saveLoggedinUser(user: User) {
+    user = {
+        _id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        username: user.username,
+        imgUrl: user.imgUrl,
+        isAdmin: user.isAdmin
+    }
+    sessionStorage.setItem(STORAGE_KEY_LOGGEDIN_USER, JSON.stringify(user))
+    return user
+}
+
+// To quickly create an admin user, uncomment the next line
+// _createAdmin()
+async function _createAdmin() {
+    const user: User = {
+        _id: '',
+        username: 'admin',
+        password: 'admin',
+        firstName: 'Mustafa Adminsky',
+        lastName: 'Adminsky',
+        email: 'default@example.com',
+        isAdmin: true,
+        imgUrl: 'https://cdn.pixabay.com/photo/2020/07/01/12/58/icon-5359553_1280.png',
+    }
+
+    const newUser = await storageService.post('user', user)
+    console.log('newUser: ', newUser)
+}
+
+function getEmptyCredentials() {
+    return {
+        username: '',
+        password: '',
+        email: ''
+    }
+}

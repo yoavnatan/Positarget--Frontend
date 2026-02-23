@@ -1,0 +1,15 @@
+
+.review-preview {
+	padding: .5em;
+	background-color: var(--clr3);
+	color: var(--gray1);
+
+	.review-txt {
+		padding: 0.4em;
+		background-color: var(--gray4);
+
+		color: var(--gray1);
+		border-left: 1em solid var(--gray1);
+		font-size: 1.2em;
+	}
+}
