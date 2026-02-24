@@ -16,6 +16,7 @@ export type FilterBy = {
     status?: 'open' | 'closed' | 'all'
     sortField: string
     sortDir: 1 | -1
+    pageIdx?: number
 }
 
 export interface Msg {

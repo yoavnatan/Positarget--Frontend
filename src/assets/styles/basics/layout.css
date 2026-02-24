@@ -1,7 +1,6 @@
-
 .main-container {
     display: grid;
-    grid-template-columns: 1rem 1fr 1rem;
+    grid-template-columns: minmax(20px, 1fr) minmax(auto, 900px) minmax(20px, 1fr);
 
     >* {
         grid-column: 2;
@@ -17,15 +16,15 @@
     grid-template-columns: 12px 1fr 12px;
 
     @media (min-width: 624px) {
-        grid-template-columns: minmax(12px, 1fr) minmax(auto, 624px) minmax(12px, 1fr);        
+        grid-template-columns: minmax(16px, 1fr) minmax(auto, 624px) minmax(16px, 1fr);
     }
 
     @media (min-width: 784px) {
-        grid-template-columns: minmax(12px, 1fr) minmax(auto, 784px) minmax(12px, 1fr);        
+        grid-template-columns: minmax(16px, 1fr) minmax(auto, 784px) minmax(16px, 1fr);
     }
 
     @media (min-width: 1048px) {
-        grid-template-columns: minmax(12px, 1fr) minmax(auto, 1048px) minmax(12px, 1fr);        
+        grid-template-columns: minmax(16px, 1fr) minmax(auto, 1048px) minmax(16px, 1fr);
     }
 
 
@@ -49,7 +48,7 @@
     grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
     gap: 10px;
 
-    > article {
+    >article {
         border: 1px solid #ccc;
         border-radius: 6px;
         padding: 2rem;

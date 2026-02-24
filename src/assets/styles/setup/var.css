@@ -1,17 +1,14 @@
 :root {
-  --clr1: #ce2e6c;
-  --clr2: #4f3a65;
-  --clr3: #574f7d;
-  --clr4: #95adbe;
-  --clr5: #dff0ea;
+  --pt-black: #111012;
+  --pt-black2: #18181c;
+  --pt-white: #ffffff;
+  --pt-gray: #77808d;
+  --input-gray: #f4f5f6;
 
-  --clr1-light: color-mix(in lab, var(--clr1), white 15%);
-
-  --gray1: #ddd;
-  --gray2: #aaa;
-  --gray3: #777;
-  --gray4: #333;
-
-  --success: rgb(41, 189, 73);
-  --error: rgb(216, 59, 59);
+  --button-blue: #1352f0;
+  --button-blue-hover: #1249d8;
+  --button-green: #e6f7eb;
+  --button-green-hover: #2fa159;
+  --button-red: #fdefee;
+  --button-red-hover: #e23939;
 }

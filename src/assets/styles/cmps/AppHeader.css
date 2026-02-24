@@ -1,16 +1,17 @@
 .app-header {
-    display: flex;
+    display: grid;
+    gap: 1.5em;
     min-height: 3.5rem;
 
     background-color: var(--clr4);
     padding: .8rem 1rem;
-    
+
     & nav {
         display: flex;
         width: 100%;
         align-items: center;
         gap: 1em;
-        
+
         font-size: .8em;
 
         .active {
@@ -18,17 +19,90 @@
         }
 
         .logo {
-            font-size: 1.4em;
-            font-weight: bold;
-            margin-inline-end: 2em;
+            font-size: 1.8em;
+            align-items: center;
+
+
+            img {
+                width: 45px;
+            }
         }
 
         .login-link {
+            font-size: 1.1em;
+            color: var(--button-blue);
             margin-inline-start: auto;
+            padding: 10px 16px;
+
+            &:hover {
+                background-color: var(--input-gray);
+                border-radius: 7.2px;
+            }
+        }
+
+        .signup-link {
+            font-size: 1.1em;
+            color: var(--pt-white);
+            background-color: var(--button-blue);
+            padding: 10px 16px;
+            border-radius: 7.2px;
+
+            &:hover {
+                background-color: var(--button-blue-hover);
+            }
         }
 
         & button {
             margin-inline-end: 0;
+        }
+
+        &.options-carusel {
+            display: flex;
+            gap: 24px;
+            overflow-x: auto;
+            white-space: nowrap;
+            scrollbar-width: none;
+
+            font-size: .9em;
+            font-weight: 480;
+
+            &::-webkit-scrollbar {
+                display: none;
+            }
+
+            /* הגדרת בסיס: ללא מסיכה */
+            transition: mask-image 0.3s ease,
+            -webkit-mask-image 0.3s ease;
+
+
+            --mask-left: black;
+            --mask-right: black;
+
+            &.scrolled-left {
+                --mask-left: transparent;
+            }
+
+            &.scrolled-right {
+                --mask-right: transparent;
+            }
+
+            /* מחילים את המסכה פעם אחת בלבד עם המשתנים */
+            mask-image: linear-gradient(to right, var(--mask-left), black 10%, black 90%, var(--mask-right));
+            -webkit-mask-image: linear-gradient(to right, var(--mask-left), black 10%, black 90%, var(--mask-right));
+
+            div {
+                cursor: pointer;
+                display: flex;
+                gap: .5em;
+                align-items: center;
+                color: var(--pt-gray);
+                flex-shrink: 0;
+            }
+        }
+
+        &.options-carusel::-webkit-scrollbar {
+            display: none;
+
         }
     }
 

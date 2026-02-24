@@ -50,10 +50,9 @@ export function MarketIndex() {
     return (
         <section className="market-index">
             <header>
-                <h2>Markets</h2>
                 {userService.getLoggedinUser() && <button onClick={onAddMarket}>Add a Market</button>}
             </header>
-            <MarketFilter filterBy={filterBy} setFilterBy={setFilterBy} />
+            {/* <MarketFilter filterBy={filterBy} setFilterBy={setFilterBy} /> */}
             <MarketList
                 markets={markets}
                 onRemoveMarket={onRemoveMarket}
