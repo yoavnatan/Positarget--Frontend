@@ -8,7 +8,10 @@ export interface Market {
     noShares: number
     endDate: number
     description: string
+    labels: string[]
     msgs: Msg[]
+    createdAt?: Date
+
 }
 
 export type FilterBy = {

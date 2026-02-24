@@ -79,6 +79,12 @@ const userSlice = createSlice({
                     state.user = action.payload
                 }
             })
+            .addCase(login.rejected, (state) => {
+                state.user = null
+                console.log('not logged in')
+            }
+            )
+
             .addCase(signup.fulfilled, (state, action) => { state.user = action.payload })
             // Logout
             .addCase(logout.fulfilled, (state) => {

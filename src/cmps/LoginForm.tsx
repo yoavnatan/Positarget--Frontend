@@ -17,6 +17,7 @@ export function LoginForm({ onLogin, isSignup }: LoginFormProps) {
 
     return (
         <form className="login-form" onSubmit={handleSubmit}>
+            <h1>Welcome</h1>
             <input
                 type="text"
                 name="username"
@@ -43,7 +44,7 @@ export function LoginForm({ onLogin, isSignup }: LoginFormProps) {
                 onChange={handleChange}
                 required
             />}
-            <button>{isSignup ? 'Signup' : 'Login'}</button>
+            <button className="signup-link">{isSignup ? 'Signup' : 'Login'}</button>
         </form>
     )
 }

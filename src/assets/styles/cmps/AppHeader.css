@@ -1,22 +1,21 @@
 .app-header {
     display: grid;
+    position: sticky;
+    top: 0;
     gap: 1.5em;
     min-height: 3.5rem;
-
-    background-color: var(--clr4);
     padding: .8rem 1rem;
 
     & nav {
+        margin: 1fr;
         display: flex;
         width: 100%;
-        align-items: center;
+        align-items: end;
         gap: 1em;
 
         font-size: .8em;
 
-        .active {
-            color: var(--clr1);
-        }
+
 
         .logo {
             font-size: 1.8em;
@@ -28,29 +27,7 @@
             }
         }
 
-        .login-link {
-            font-size: 1.1em;
-            color: var(--button-blue);
-            margin-inline-start: auto;
-            padding: 10px 16px;
 
-            &:hover {
-                background-color: var(--input-gray);
-                border-radius: 7.2px;
-            }
-        }
-
-        .signup-link {
-            font-size: 1.1em;
-            color: var(--pt-white);
-            background-color: var(--button-blue);
-            padding: 10px 16px;
-            border-radius: 7.2px;
-
-            &:hover {
-                background-color: var(--button-blue-hover);
-            }
-        }
 
         & button {
             margin-inline-end: 0;
@@ -62,6 +39,7 @@
             overflow-x: auto;
             white-space: nowrap;
             scrollbar-width: none;
+            align-items: center;
 
             font-size: .9em;
             font-weight: 480;
@@ -90,7 +68,7 @@
             mask-image: linear-gradient(to right, var(--mask-left), black 10%, black 90%, var(--mask-right));
             -webkit-mask-image: linear-gradient(to right, var(--mask-left), black 10%, black 90%, var(--mask-right));
 
-            div {
+            &>* {
                 cursor: pointer;
                 display: flex;
                 gap: .5em;
@@ -98,6 +76,13 @@
                 color: var(--pt-gray);
                 flex-shrink: 0;
             }
+
+
+
+            a.active {
+                color: var(--pt-black2);
+            }
+
         }
 
         &.options-carusel::-webkit-scrollbar {
@@ -127,5 +112,74 @@
             aspect-ratio: 1;
             border-radius: 50%;
         }
+    }
+}
+
+.search-container {
+    flex-grow: 1;
+    position: relative;
+
+    input {
+        height: 37px;
+        font-size: 1.1em;
+        width: 100%;
+        background-color: var(--input-gray);
+        border-radius: 7.2px;
+        border: none;
+        padding: 16px 10px 16px 2.3em;
+        letter-spacing: .3px;
+    }
+
+    .icon.search {
+        position: absolute;
+        left: 10px;
+        top: 28%;
+        transform: translateY(-50%);
+        width: 16px;
+        height: 16px;
+        transform: scale(1.1);
+    }
+
+}
+
+.border {
+    border-bottom: 1px solid var(--border-gray);
+    margin-top: .5em;
+    position: sticky;
+    top: 119px;
+}
+
+
+.signup-link {
+    cursor: pointer;
+    font-size: 1.1em;
+    color: var(--pt-white);
+    background-color: var(--button-blue);
+    padding: 10px 16px;
+    border-radius: 7.2px;
+    min-width: max-content;
+
+
+    &:hover {
+        background-color: var(--button-blue-hover);
+    }
+
+    &:active {
+        transform: scale(0.97);
+    }
+}
+
+
+.login-link {
+    cursor: pointer;
+    font-size: 1.1em;
+    color: var(--button-blue);
+    margin-inline-start: auto;
+    padding: 10px 16px;
+    min-width: max-content;
+
+    &:hover {
+        background-color: var(--input-gray);
+        border-radius: 7.2px;
     }
 }

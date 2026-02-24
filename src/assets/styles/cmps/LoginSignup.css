@@ -1,11 +1,37 @@
+.login-page {
+	display: grid;
+	place-content: center;
+	z-index: 100;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: 450px;
+	background-color: var(--pt-white);
+	border-radius: 2em;
+	height: 380px;
+	text-align: center;
+}
+
+
 .login-form,
 .signup-form {
 	display: grid;
-	width: min(80%, 300px);
+	width: 100%;
 	margin: auto;
-
+	justify-content: center;
+	gap: 1em;
 	padding: 1em;
 	background-color: var(--clr4);
+
+
+	input {
+		padding: 0.8em;
+		border-radius: 7.2px;
+		border: 1px solid var(--border-gray);
+		width: 300px;
+		height: 50px;
+	}
 }
 
 .signup-form {
@@ -26,6 +52,7 @@
 }
 
 .login-page nav {
+
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -34,7 +61,7 @@
 	margin-block: 100px 0.5em;
 
 
-	> a {
+	>a {
 		font-size: 0.8em;
 		color: var(--clr4);
 
@@ -47,4 +74,12 @@
 			color: var(--clr2);
 		}
 	}
+}
+
+.overlay {
+	position: fixed;
+	inset: 0;
+	background-color: black;
+	opacity: 0.5;
+	z-index: 10;
 }

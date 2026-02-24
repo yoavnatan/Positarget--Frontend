@@ -1,5 +1,6 @@
 import { User, UserCred } from '../../types/user.type'
 import { storageService } from '../async-storage.service'
+import { makeId } from '../util.service'
 
 const STORAGE_KEY_LOGGEDIN_USER = 'loggedinUser'
 
@@ -47,7 +48,8 @@ async function update(user: User) {
 async function login(userCred: UserCred) {
     const users: User[] = await storageService.query('user')
     const user = users.find(user => user.username === userCred.username)
-
+    if (!user) throw new Error('Invalid username')
+    if (user.password !== userCred.password) throw new Error('Invalid password')
     if (user) return saveLoggedinUser(user)
 }
 
@@ -58,7 +60,7 @@ async function signup(userCred: UserCred) {
     const userToSave: User = {
         username: userCred.username,
         password: userCred.password,
-        _id: '',
+        _id: makeId(),
         firstName: '',
         lastName: '',
         isAdmin: false,
@@ -66,6 +68,7 @@ async function signup(userCred: UserCred) {
         email: userCred.email || '' // Ensure email is always defined
     }
     const user = await storageService.post('user', userToSave)
+    console.log(user)
     return saveLoggedinUser(user)
 }
 

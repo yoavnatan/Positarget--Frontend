@@ -10,6 +10,7 @@ body {
     letter-spacing: 0.3px;
 }
 
+
 h1,
 h2,
 h3,
@@ -47,4 +48,8 @@ video,
 object {
     max-width: 100%;
     display: block;
+}
+
+.icon {
+    color: var(--pt-gray);
 }

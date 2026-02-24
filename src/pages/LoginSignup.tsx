@@ -18,7 +18,7 @@ export function LoginSignup() {
 
     async function _login(credentials: UserCred) {
         try {
-            dispatch(login(credentials))
+            await dispatch(login(credentials)).unwrap()
             dispatch(setMsg({ txt: 'Logged in successfully', type: 'success' }))
             navigate('/')
         } catch (err) {
@@ -33,7 +33,7 @@ export function LoginSignup() {
 
             .then(() => {
                 dispatch(setMsg({ txt: 'Signed in successfully', type: 'success' }))
-                navigate('/toy')
+                navigate('/')
 
             })
             .catch((err) => {
@@ -43,19 +43,21 @@ export function LoginSignup() {
     }
 
     return (
-        <div className="login-page">
-            <LoginForm
-                onLogin={onLogin}
-                isSignup={isSignup}
-            />
-            <div className="btns">
-                <a href="#" onClick={() => setIsSignUp(!isSignup)}>
-                    {isSignup ?
-                        'Already a member? Login' :
-                        'New user? Signup here'
-                    }
-                </a >
-            </div>
-        </div >
+        <>
+            <div className="login-page">
+                <LoginForm
+                    onLogin={onLogin}
+                    isSignup={isSignup}
+                />
+                <div className="btns">
+                    <a href="#" onClick={() => setIsSignUp(!isSignup)}>
+                        {isSignup ?
+                            'Already a member? Login' :
+                            'New user? Signup here'
+                        }
+                    </a >
+                </div>
+            </div >
+        </>
     )
 }

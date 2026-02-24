@@ -2,9 +2,11 @@ import { Link, NavLink } from 'react-router-dom'
 import { useNavigate } from 'react-router'
 import { useAppDispatch, useAppSelector } from '../store/store'
 import { logout } from '../store/slices/user.slice'
-import { setMsg } from '../store/slices/system.slice'
+import { setIsAuthShown, setMsg } from '../store/slices/system.slice'
 import logoImg from '/logo.png'
 import Trending from '../assets/svg/trending.svg?react'
+import Search from '../assets/svg/search.svg?react'
+import Bell from '../assets/svg/bell.svg?react'
 import { useRef, useState, useEffect } from 'react'
 
 export function AppHeader() {
@@ -52,52 +54,69 @@ export function AppHeader() {
 	}
 
 	return (
-		<header className="app-header">
-			<nav>
-				<NavLink to="/" className="logo flex">
-					<img src={logoImg} alt="Logo" />
-					<div className='inter-font-bold'>Positarget</div>
-				</NavLink>
-				{/* <NavLink to="about">About</NavLink>
+		<>
+			<header className="app-header">
+				<nav>
+					<NavLink to="/" className="logo flex">
+						<img src={logoImg} alt="Logo" />
+						<div className='inter-font-bold'>Positarget</div>
+					</NavLink>
+					{/* <NavLink to="about">About</NavLink>
 				<NavLink to="market">Markets</NavLink> */}
 
-
-				{user?.isAdmin && <NavLink to="/admin">Admin</NavLink>}
-
-				{!user && (
-					<>
-						<NavLink to="auth/login" className="login-link">Log In</NavLink>
-						<NavLink to="auth/signup" className="signup-link">Sign Up</NavLink>
-					</>
-				)}
-				{user && (
-					<div className="user-info">
-						<Link to={`user/${user._id}`}>
-							{user.imgUrl && <img src={user.imgUrl} />}
-							{user.username}
-						</Link>
-						<button onClick={onLogout}>logout</button>
+					<div className="search-container wide-screen">
+						<input type="text" placeholder="Search" />
+						<Search className="icon search medium" />
 					</div>
-				)}
-			</nav>
-			<nav
-				ref={carouselRef}
-				className={` options-carusel carousel-container ${isScrolledLeft ? 'scrolled-left' : ''} ${isScrolledRight ? 'scrolled-right' : ''}`}>
+					{user?.isAdmin && <NavLink to="/admin">Admin</NavLink>}
 
+					{!user && (
+						<>
+							<div className="login-link" onClick={() => dispatch(setIsAuthShown(true))}>Log In</div>
+							<div className="signup-link" onClick={() => dispatch(setIsAuthShown(true))}>Sign Up</div>
+						</>
+					)}
+					{user && (
+						<div className="user-info">
+							<Link to={`user/${user._id}`}>
+								{user.imgUrl && <img src={user.imgUrl} />}
+								{user.username}
+							</Link>
+							<button onClick={onLogout}>logout</button>
+						</div>
+					)}
+				</nav>
+				<nav ref={carouselRef}
+					className={` options-carusel carousel-container ${isScrolledLeft ? 'scrolled-left' : ''} ${isScrolledRight ? 'scrolled-right' : ''}`}>
+					<NavLink to={`/`}><Trending className='icon trending' /> Trending</NavLink>
+					<NavLink to={`/${"Breaking"}`}>Braeking</NavLink>
+					<NavLink to={`/{${"New"}}`}>New</NavLink>
 
-				<div><Trending className='icon trending' /> Trending</div>
-				<div>Braeking</div>
-				<div>New</div>
-				<div>Politics</div>
-				<div>Sports</div>
-				<div>Crypto</div>
-				<div>Finance</div>
-				<div>Geopolitics</div>
-				<div>Earnings</div>
-				<div>Tech</div>
-				<div>Culture</div>
-				<div>World</div>
-			</nav>
-		</header>
+					<div style={{
+						border: '1px solid rgb(230, 232, 234)',
+						height: '16px',
+						borderRadius: '7.2px',
+						cursor: 'default',
+					}}></div>
+
+					<NavLink to={`/{${"Politics"}}`}>Politics</NavLink>
+					<NavLink to={`/{${"Sports"}}`}>Sports</NavLink>
+					<NavLink to={`/{${"Crypto"}}`}>Crypto</NavLink>
+					<NavLink to={`/{${"Finance"}}`}>Finance</NavLink>
+					<NavLink to={`/{${"Geopolitics"}}`}>Geopolitics</NavLink>
+					<NavLink to={`/{${"Earnings"}}`}>Earnings</NavLink>
+					<NavLink to={`/{${"Tech"}}`}>Tech</NavLink>
+					<NavLink to={`/{${"Culture"}}`}>Culture</NavLink>
+					<NavLink to={`/{${"World"}}`}>World</NavLink>
+					<NavLink to={`/{${"Economy"}}`}>Economy</NavLink>
+					<NavLink to={`/{${"Climate-science"}}`}>Climate & Science</NavLink>
+					<NavLink to={`/{${"Mentions"}}`}>Mentions</NavLink>
+					<NavLink to={`/{${"World"}}`}>World</NavLink>
+					<NavLink to={`/{${"World"}}`}>World</NavLink>
+				</nav>
+			</header>
+
+			<div className="border full"></div>
+		</>
 	)
 }
