@@ -3,7 +3,7 @@ import { LoginForm } from '../cmps/LoginForm.js'
 import { useState } from 'react'
 import { useAppDispatch } from '../store/store.js'
 import { login, signup } from '../store/slices/user.slice.js'
-import { setMsg } from '../store/slices/system.slice.js'
+import { setIsAuthShown, setMsg } from '../store/slices/system.slice.js'
 import { UserCred } from '../types/user.type.js'
 
 export function LoginSignup() {
@@ -19,6 +19,7 @@ export function LoginSignup() {
     async function _login(credentials: UserCred) {
         try {
             await dispatch(login(credentials)).unwrap()
+            dispatch(setIsAuthShown(false))
             dispatch(setMsg({ txt: 'Logged in successfully', type: 'success' }))
             navigate('/')
         } catch (err) {

@@ -8,6 +8,7 @@ import Trending from '../assets/svg/trending.svg?react'
 import Search from '../assets/svg/search.svg?react'
 import Bell from '../assets/svg/bell.svg?react'
 import { useRef, useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion';
 
 export function AppHeader() {
 	const carouselRef = useRef<HTMLDivElement>(null)
@@ -17,7 +18,8 @@ export function AppHeader() {
 	const dispatch = useAppDispatch()
 	const { user } = useAppSelector((state) => state.userModule)
 	const navigate = useNavigate()
-
+	const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+	const timeoutRef = useRef<number | null>(null);
 
 	useEffect(() => {
 		const handleScroll = () => {
@@ -41,12 +43,32 @@ export function AppHeader() {
 		}
 	}, [])
 
+	const handleMouseEnter = () => {
+		// אם המשתמש חזר לתפריט בתוך פחות משניה - בטל את הסגירה המתוכננת
+		if (timeoutRef.current) {
+			window.clearTimeout(timeoutRef.current);
+			timeoutRef.current = null;
+		}
+		timeoutRef.current = window.setTimeout(() => {
+			setIsUserMenuOpen(true);
+		}, 100);
+	};
+
+	const handleMouseLeave = () => {
+		// קבע סגירה לעוד שניה (1000ms)
+		timeoutRef.current = window.setTimeout(() => {
+			setIsUserMenuOpen(false);
+		}, 400);
+	};
+
 
 	async function onLogout() {
 		try {
 			dispatch(logout())
 			navigate('/')
 			dispatch(setMsg({ txt: 'Good Bye', type: 'success' }))
+			setIsUserMenuOpen(false);
+
 
 		} catch (err) {
 			dispatch(setMsg({ txt: 'Cannot logout', type: 'error' }))
@@ -55,68 +77,118 @@ export function AppHeader() {
 
 	return (
 		<>
-			<header className="app-header">
-				<nav>
-					<NavLink to="/" className="logo flex">
-						<img src={logoImg} alt="Logo" />
-						<div className='inter-font-bold'>Positarget</div>
-					</NavLink>
-					{/* <NavLink to="about">About</NavLink>
+			<header className="app-header full">
+				<div className="inner-container">
+					<nav>
+						<NavLink to="/" className="logo flex">
+							<img src={logoImg} alt="Logo" />
+							<div className='inter-font-bold'>Positarget</div>
+						</NavLink>
+						{/* <NavLink to="about">About</NavLink>
 				<NavLink to="market">Markets</NavLink> */}
 
-					<div className="search-container wide-screen">
-						<input type="text" placeholder="Search" />
-						<Search className="icon search medium" />
-					</div>
-					{user?.isAdmin && <NavLink to="/admin">Admin</NavLink>}
-
-					{!user && (
-						<>
-							<div className="login-link" onClick={() => dispatch(setIsAuthShown(true))}>Log In</div>
-							<div className="signup-link" onClick={() => dispatch(setIsAuthShown(true))}>Sign Up</div>
-						</>
-					)}
-					{user && (
-						<div className="user-info">
-							<Link to={`user/${user._id}`}>
-								{user.imgUrl && <img src={user.imgUrl} />}
-								{user.username}
-							</Link>
-							<button onClick={onLogout}>logout</button>
+						<div className="search-container wide-screen">
+							<input type="text" placeholder="Search" />
+							<Search className="icon search medium" />
 						</div>
-					)}
-				</nav>
-				<nav ref={carouselRef}
-					className={` options-carusel carousel-container ${isScrolledLeft ? 'scrolled-left' : ''} ${isScrolledRight ? 'scrolled-right' : ''}`}>
-					<NavLink to={`/`}><Trending className='icon trending' /> Trending</NavLink>
-					<NavLink to={`/${"Breaking"}`}>Braeking</NavLink>
-					<NavLink to={`/{${"New"}}`}>New</NavLink>
+						{user?.isAdmin && <NavLink to="/admin">Admin</NavLink>}
 
-					<div style={{
-						border: '1px solid rgb(230, 232, 234)',
-						height: '16px',
-						borderRadius: '7.2px',
-						cursor: 'default',
-					}}></div>
+						{!user && (
+							<>
+								<div className="login-link" onClick={() => dispatch(setIsAuthShown(true))}>Log In</div>
+								<div className="signup-link" onClick={() => dispatch(setIsAuthShown(true))}>Sign Up</div>
+							</>
+						)}
+						{user && (
 
-					<NavLink to={`/{${"Politics"}}`}>Politics</NavLink>
-					<NavLink to={`/{${"Sports"}}`}>Sports</NavLink>
-					<NavLink to={`/{${"Crypto"}}`}>Crypto</NavLink>
-					<NavLink to={`/{${"Finance"}}`}>Finance</NavLink>
-					<NavLink to={`/{${"Geopolitics"}}`}>Geopolitics</NavLink>
-					<NavLink to={`/{${"Earnings"}}`}>Earnings</NavLink>
-					<NavLink to={`/{${"Tech"}}`}>Tech</NavLink>
-					<NavLink to={`/{${"Culture"}}`}>Culture</NavLink>
-					<NavLink to={`/{${"World"}}`}>World</NavLink>
-					<NavLink to={`/{${"Economy"}}`}>Economy</NavLink>
-					<NavLink to={`/{${"Climate-science"}}`}>Climate & Science</NavLink>
-					<NavLink to={`/{${"Mentions"}}`}>Mentions</NavLink>
-					<NavLink to={`/{${"World"}}`}>World</NavLink>
-					<NavLink to={`/{${"World"}}`}>World</NavLink>
-				</nav>
-			</header>
+							<div className="user-info">
+								<div className="info-item flex ">
+									<h5 >Portfolio</h5>
+									<h5 className="sum">$0.00</h5>
 
-			<div className="border full"></div>
+								</div>
+								<div className="info-item flex">
+									<h5>Cash</h5>
+									<h5 className='sum'>$0.00</h5>
+								</div>
+								<div className="bell info-item"><Bell className="icon bell medium" /></div>
+
+								<img className="user-img" src="/img/grad1.png"
+									onMouseEnter={handleMouseEnter}
+									onMouseLeave={handleMouseLeave} />
+								<AnimatePresence>
+									{isUserMenuOpen && (
+										<motion.div
+											animate={{ opacity: 1, scale: 1 }}
+											exit={{ opacity: 0, scale: 0.95 }}
+											transition={{ duration: 0.2 }}
+											style={{
+												position: 'absolute',
+												top: '100%',
+												right: 0,   // הצמדה לימין, שנה ל-left אם צריך
+												zIndex: 999 // מבטיח שיהיה מעל אלמנטים אחרים
+											}}
+										>
+											<motion.div
+												animate={{ opacity: 1, y: 0 }}
+												exit={{ opacity: 0, y: 5 }}
+												transition={{ duration: 0.3 }}
+											>
+												<section
+													className={`dropdown-menu ${isUserMenuOpen ? 'open' : ''}`}
+													onMouseEnter={handleMouseEnter}
+													onMouseLeave={handleMouseLeave}
+												>
+													<ul className="clean-list">
+														<li><Link to={`user/${user._id}`}>
+															{user.username}
+														</Link>
+														</li>
+														<li ><a onClick={onLogout}>Logout</a></li>
+													</ul>
+												</section>
+											</motion.div>
+										</motion.div>
+									)}
+								</AnimatePresence>
+							</div>
+
+						)}
+					</nav>
+					<nav ref={carouselRef}
+						className={` options-carusel carousel-container ${isScrolledLeft ? 'scrolled-left' : ''} ${isScrolledRight ? 'scrolled-right' : ''}`}>
+						<NavLink to={`/`}><Trending className='icon trending' /> Trending</NavLink>
+						<NavLink to={`/${"Breaking"}`}>Braeking</NavLink>
+						<NavLink to={`/{${"New"}}`}>New</NavLink>
+
+						<div className="divider" style={{
+							border: '1px solid rgb(230, 232, 234)',
+							height: '16px',
+							borderRadius: '7.2px',
+							cursor: 'default',
+						}}></div>
+
+
+						<NavLink to={`/{${"Politics"}}`}>Politics</NavLink>
+						<NavLink to={`/{${"Sports"}}`}>Sports</NavLink>
+						<NavLink to={`/{${"Crypto"}}`}>Crypto</NavLink>
+						<NavLink to={`/{${"Finance"}}`}>Finance</NavLink>
+						<NavLink to={`/{${"Geopolitics"}}`}>Geopolitics</NavLink>
+						<NavLink to={`/{${"Earnings"}}`}>Earnings</NavLink>
+						<NavLink to={`/{${"Tech"}}`}>Tech</NavLink>
+						<NavLink to={`/{${"Culture"}}`}>Culture</NavLink>
+						<NavLink to={`/{${"World"}}`}>World</NavLink>
+						<NavLink to={`/{${"Economy"}}`}>Economy</NavLink>
+						<NavLink to={`/{${"Climate-science"}}`}>Climate & Science</NavLink>
+						<NavLink to={`/{${"Mentions"}}`}>Mentions</NavLink>
+						<NavLink to={`/{${"World"}}`}>World</NavLink>
+						<NavLink to={`/{${"World"}}`}>World</NavLink>
+					</nav>
+				</div >
+			</header >
+
+			{/* <div className="border full"></div> */}
+
 		</>
 	)
 }
