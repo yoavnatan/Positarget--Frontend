@@ -7,8 +7,11 @@ import logoImg from '/logo.png'
 import Trending from '../assets/svg/trending.svg?react'
 import Search from '../assets/svg/search.svg?react'
 import Bell from '../assets/svg/bell.svg?react'
+import Arrow from '../assets/svg/drop-arrow.svg?react'
+import SleepingBell from '../assets/svg/sleeping-bell.svg?react'
 import { useRef, useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
+import useClickOutside from '../customHooks/useClickOutside'
 
 export function AppHeader() {
 	const carouselRef = useRef<HTMLDivElement>(null)
@@ -19,7 +22,11 @@ export function AppHeader() {
 	const { user } = useAppSelector((state) => state.userModule)
 	const navigate = useNavigate()
 	const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+	const [isNotificationsMenuOpen, setIsNotificationsMenuOpen] = useState(false)
 	const timeoutRef = useRef<number | null>(null);
+	const dropdownRef = useRef<HTMLDivElement>(null);
+	const buttonRef = useRef<HTMLDivElement>(null);
+	useClickOutside(dropdownRef, () => setIsNotificationsMenuOpen(false), buttonRef);
 
 	useEffect(() => {
 		const handleScroll = () => {
@@ -111,11 +118,53 @@ export function AppHeader() {
 									<h5>Cash</h5>
 									<h5 className='sum'>$0.00</h5>
 								</div>
-								<div className="bell info-item"><Bell className="icon bell medium" /></div>
+								<div className="signup-link">Deposit</div>
+								<div className="bell info-item" ref={buttonRef} onClick={(ev) => {
+									ev.preventDefault()
+									setIsNotificationsMenuOpen(prev => !prev)
+								}
+								} ><Bell className="icon bell medium" /></div>
+								<AnimatePresence>
+									{isNotificationsMenuOpen && (
+										<motion.div
+											animate={{ opacity: 1, scale: 1 }}
+											exit={{ opacity: 0, scale: 0.95 }}
+											transition={{ duration: 0.2 }}
+											style={{
+												position: 'absolute',
+												top: '100%',
+												right: 0,   // הצמדה לימין, שנה ל-left אם צריך
+												zIndex: 999 // מבטיח שיהיה מעל אלמנטים אחרים
+											}}
+										>
+											<motion.div
+												animate={{ opacity: 1, y: 0 }}
+												exit={{ opacity: 0, y: 5 }}
+												transition={{ duration: 0.3 }}
+											>
+												<section
+													ref={dropdownRef}
+													className={`dropdown-menu notifications ${isNotificationsMenuOpen ? 'open' : ''}`}
+												>
 
-								<img className="user-img" src="/img/grad1.png"
+													<header>Nofitications</header>
+													<div className="inner-container">
+														<SleepingBell className="icon sleeping-bell" />
+														<div>You have no notifications.</div>
+													</div>
+
+												</section>
+											</motion.div>
+										</motion.div>
+									)}
+								</AnimatePresence>
+								<div className="img-container"
 									onMouseEnter={handleMouseEnter}
-									onMouseLeave={handleMouseLeave} />
+									onMouseLeave={handleMouseLeave} >
+									<img className="user-img" src="/img/grad1.png"
+									/>
+									<Arrow className="icon arrow" />
+								</div>
 								<AnimatePresence>
 									{isUserMenuOpen && (
 										<motion.div
