@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit'
 import { userService } from '../../services/user'
 import { User } from '../../types/user.type'
+import { RootState } from '../store'
 
 // טיפוסים
 
@@ -50,6 +51,33 @@ export const removeUser = createAsyncThunk('user/removeUser', async (userId: str
     return userId
 })
 
+// --Financial actions --
+
+export const fetchUserDetails = createAsyncThunk(
+    'user/fetchDetails',
+    async (userId: string) => {
+        const user: Pick<User, '_id' | 'cash' | 'portfolio'> = await userService.getById(userId)
+        return { cash: user.cash, portfolio: user.portfolio }
+    }
+)
+
+export const updateUserCash = createAsyncThunk(
+    'user/updateCash',
+    async (amount: number, { getState }) => {
+        const { user } = (getState() as RootState).userModule
+        if (!user) throw new Error('No logged in user')
+
+        const updatedUser = { ...user, cash: (user.cash || 0) + amount }
+
+        // עדכון ב-DB דרך ה-Service
+        const savedUser = await userService.update(updatedUser)
+
+        // עדכון ה-sessionStorage (רק השדות המותרים)
+        userService.saveLoggedinUser(savedUser)
+
+        return savedUser.cash
+    }
+)
 // --- Slice ---
 
 const userSlice = createSlice({
@@ -94,6 +122,17 @@ const userSlice = createSlice({
             // Remove User
             .addCase(removeUser.fulfilled, (state, action) => {
                 state.users = state.users.filter(u => u._id !== action.payload)
+            })
+            .addCase(fetchUserDetails.fulfilled, (state, action) => {
+                if (state.user) {
+                    state.user.cash = action.payload.cash
+                    state.user.portfolio = action.payload.portfolio
+                }
+            })
+            .addCase(updateUserCash.fulfilled, (state, action) => {
+                if (state.user) {
+                    state.user = { ...state.user, cash: action.payload }
+                }
             })
     },
 })

@@ -6,10 +6,10 @@ export interface User {
     isAdmin: boolean
     username: string
     imgUrl?: string
-    // password?: string
+    password?: string
 
-    cash: number          // יתרת מזומן
-    portfolio: Position[] // החזקות לפי מרקט
+    cash?: number          // יתרת מזומן
+    portfolio?: Position[] // החזקות לפי מרקט
 }
 
 export interface UserCred {

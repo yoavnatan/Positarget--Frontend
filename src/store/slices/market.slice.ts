@@ -59,6 +59,15 @@ const marketSlice = createSlice({
                 state.isRemoving = false
                 state.markets = state.markets.filter(c => c._id !== action.payload)
             })
+            .addCase(addMarket.fulfilled, (state, action) => {
+                state.markets.push(action.payload)
+            })
+            .addCase(updateMarket.fulfilled, (state, action) => {
+                const idx = state.markets.findIndex(m => m._id === action.payload._id)
+                if (idx !== -1) {
+                    state.markets[idx] = action.payload
+                }
+            })
     }
 })
 

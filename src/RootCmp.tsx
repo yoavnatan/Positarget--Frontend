@@ -14,11 +14,13 @@ import { AppFooter } from './cmps/AppFooter'
 import { LoginSignup } from './pages/LoginSignup'
 import { AppMsg } from './cmps/AppMsg'
 import { useAppDispatch, useAppSelector } from './store/store'
-import { setIsAuthShown } from './store/slices/system.slice'
+import { setIsAuthShown, setIsModalShown } from './store/slices/system.slice'
+import { Modal } from './cmps/Modal'
 
 
 export function RootCmp() {
     const { isAuthShown } = useAppSelector((state) => state.systemModule)
+    const { isModalShown } = useAppSelector((state) => state.systemModule)
     const dispatch = useAppDispatch()
 
     useEffect(() => {
@@ -35,6 +37,7 @@ export function RootCmp() {
     return (
         <div className="main-container">
             {isAuthShown && <div className="overlay" onClick={() => dispatch(setIsAuthShown(false))}></div>}
+            {isModalShown && <div className="overlay" onClick={() => dispatch(setIsModalShown(false))}></div>}
             <AppHeader />
             <AppMsg />
             {isAuthShown && <LoginSignup />}

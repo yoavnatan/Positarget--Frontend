@@ -9,12 +9,14 @@ interface SystemState {
         type: 'success' | 'error' | 'info' | null
     } | null
     isAuthShown: boolean
+    isModalShown: boolean
 }
 
 const initialState: SystemState = {
     isLoading: false,
     msg: null,
     isAuthShown: false,
+    isModalShown: false,
 }
 
 const systemSlice = createSlice({
@@ -35,8 +37,11 @@ const systemSlice = createSlice({
         setIsAuthShown(state, action: PayloadAction<boolean>) {
             state.isAuthShown = action.payload
         },
+        setIsModalShown(state, action: PayloadAction<boolean>) {
+            state.isModalShown = action.payload
+        },
     },
 })
 
-export const { setLoading, setMsg, clearMsg, setIsAuthShown } = systemSlice.actions
+export const { setLoading, setMsg, clearMsg, setIsAuthShown, setIsModalShown } = systemSlice.actions
 export const systemReducer = systemSlice.reducer

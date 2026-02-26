@@ -1,32 +1,41 @@
 import { Link, NavLink } from 'react-router-dom'
 import { useNavigate } from 'react-router'
 import { useAppDispatch, useAppSelector } from '../store/store'
-import { logout } from '../store/slices/user.slice'
-import { setIsAuthShown, setMsg } from '../store/slices/system.slice'
+import { fetchUserDetails, logout, updateUserCash } from '../store/slices/user.slice'
+import { setIsAuthShown, setIsModalShown, setMsg } from '../store/slices/system.slice'
 import logoImg from '/logo.png'
 import Trending from '../assets/svg/trending.svg?react'
 import Search from '../assets/svg/search.svg?react'
 import Bell from '../assets/svg/bell.svg?react'
 import Arrow from '../assets/svg/drop-arrow.svg?react'
 import SleepingBell from '../assets/svg/sleeping-bell.svg?react'
+import New from '../assets/svg/new.svg?react'
+import Popular from '../assets/svg/fire.svg?react'
 import { useRef, useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import useClickOutside from '../customHooks/useClickOutside'
+import { Modal } from './Modal'
+import { useForm } from '../customHooks/useForm'
 
 export function AppHeader() {
 	const carouselRef = useRef<HTMLDivElement>(null)
 	const [isScrolledLeft, setIsScrolledLeft] = useState(false)
 	const [isScrolledRight, setIsScrolledRight] = useState(true)
-
+	const { isModalShown } = useAppSelector((state) => state.systemModule)
 	const dispatch = useAppDispatch()
 	const { user } = useAppSelector((state) => state.userModule)
 	const navigate = useNavigate()
+	const [depositFields, handleDepositChange] = useForm({ amount: 0 })
 	const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
 	const [isNotificationsMenuOpen, setIsNotificationsMenuOpen] = useState(false)
+	const [isSearchOpen, setIsSearchOpen] = useState(false)
 	const timeoutRef = useRef<number | null>(null);
 	const dropdownRef = useRef<HTMLDivElement>(null);
 	const buttonRef = useRef<HTMLDivElement>(null);
+	const searchRef = useRef<HTMLDivElement>(null);
+	const inputRef = useRef<HTMLDivElement>(null);
 	useClickOutside(dropdownRef, () => setIsNotificationsMenuOpen(false), buttonRef);
+	useClickOutside(searchRef, () => setIsSearchOpen(false), null);
 
 	useEffect(() => {
 		const handleScroll = () => {
@@ -49,6 +58,10 @@ export function AppHeader() {
 			}
 		}
 	}, [])
+
+	useEffect(() => {
+		if (user) dispatch(fetchUserDetails(user._id))
+	}, [user])
 
 	const handleMouseEnter = () => {
 		// אם המשתמש חזר לתפריט בתוך פחות משניה - בטל את הסגירה המתוכננת
@@ -82,8 +95,40 @@ export function AppHeader() {
 		}
 	}
 
+	async function handleDeposit(ev: React.MouseEvent) {
+		ev.preventDefault()
+		const amount = depositFields.amount
+
+		if (amount <= 0) return // בדיקה בסיסית
+
+		try {
+			// כאן תפעיל את ה-action שלך, לדוגמה:
+			// await dispatch(updateUserCash(amount))
+			await dispatch(updateUserCash(amount)).unwrap()
+			console.log('Depositing:', amount)
+			dispatch(setIsModalShown(false))
+			dispatch(setMsg({ txt: `Successfully deposited $${amount}`, type: 'success' }))
+		} catch (err) {
+			dispatch(setMsg({ txt: 'Deposit failed', type: 'error' }))
+		}
+	}
+
 	return (
 		<>
+			{isModalShown && (<Modal>
+				<header>Deposit Funds</header>
+				<input type="number"
+					placeholder="Amount"
+					name="amount"
+					value={depositFields.amount}
+					onChange={handleDepositChange}
+				/>
+				<div className="btns">
+					<button className="confirm-btn signup-link" onClick={(ev) => handleDeposit(ev)}>Confirm</button>
+					<button className="cancel-btn login-link" onClick={() => dispatch(setIsModalShown(false))}>Cancel</button>
+				</div>
+			</Modal>)}
+
 			<header className="app-header full">
 				<div className="inner-container">
 					<nav>
@@ -94,9 +139,28 @@ export function AppHeader() {
 						{/* <NavLink to="about">About</NavLink>
 				<NavLink to="market">Markets</NavLink> */}
 
-						<div className="search-container wide-screen">
+						<div className="search-container wide-screen" ref={searchRef} onClick={() => setIsSearchOpen(true)}>
 							<input type="text" placeholder="Search" />
 							<Search className="icon search medium" />
+							<div className={`search-modal ${isSearchOpen ? 'open' : ''}`}>
+								<header>Browse</header>
+								<div className="browse-container">
+									<div className="browse-item"><New /> New</div>
+									<div className="browse-item"><Trending /> Trending</div>
+									<div className="browse-item"><Popular /> Popular</div>
+								</div>
+								<header>Topics</header>
+								<div className="topics-container">
+									<div className="topic-item">Topic</div>
+									<div className="topic-item">Topic</div>
+									<div className="topic-item">Topic</div>
+									<div className="topic-item">Topic</div>
+									<div className="topic-item">Topic</div>
+									<div className="topic-item">Topic</div>
+									<div className="topic-item">Topic</div>
+									<div className="topic-item">Topic</div>
+								</div>
+							</div>
 						</div>
 						{user?.isAdmin && <NavLink to="/admin">Admin</NavLink>}
 
@@ -111,14 +175,14 @@ export function AppHeader() {
 							<div className="user-info">
 								<div className="info-item flex ">
 									<h5 >Portfolio</h5>
-									<h5 className="sum">$0.00</h5>
+									<h5 className="sum"> $0.00</h5>
 
 								</div>
 								<div className="info-item flex">
 									<h5>Cash</h5>
-									<h5 className='sum'>$0.00</h5>
+									<h5 className='sum'>${user.cash || '0.00'}</h5>
 								</div>
-								<div className="signup-link">Deposit</div>
+								<div className="signup-link" onClick={() => dispatch(setIsModalShown(true))}>Deposit</div>
 								<div className="bell info-item" ref={buttonRef} onClick={(ev) => {
 									ev.preventDefault()
 									setIsNotificationsMenuOpen(prev => !prev)
