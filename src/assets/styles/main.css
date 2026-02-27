@@ -17,6 +17,7 @@
 @import "cmps/AppHeader";
 @import "cmps/AppFooter";
 @import "cmps/Modal.css";
+@import "cmps/AppMsg.css";
 
 @import "cmps/market/MarketIndex";
 @import "cmps/market/MarketList";

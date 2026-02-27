@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { RootState } from '../store/store'
 import { clearMsg } from '../store/slices/system.slice'
+import { AnimatePresence, motion } from 'framer-motion'
 
 export function AppMsg() {
     const msg = useSelector((state: RootState) => state.systemModule.msg)
@@ -28,13 +29,21 @@ export function AppMsg() {
         dispatch(clearMsg())
     }
 
-    if (!msg) return null
-
     return (
-        <section className={`app-msg ${msg.type}`}>
-            <button onClick={onCloseMsg}>X</button>
-            <p>{msg.txt}</p>
-        </section>
+        <AnimatePresence>
+            {msg && (
+                <motion.section
+                    className={`app-msg flex ${msg.type}`}
+                    initial={{ opacity: 0, y: 10, x: '-50%' }} // כניסה מלמטה
+                    animate={{ opacity: 1, y: 0, x: '-50%' }}  // מצב סטטי
+                    exit={{ opacity: 0, y: 10, x: '-50%' }}    // יציאה חלקה
+                    transition={{ duration: 0.2 }}
+                >
+                    <p>{msg.txt}</p>
+                    {/* <button onClick={onCloseMsg}>X</button> */}
+                </motion.section>
+            )}
+        </AnimatePresence>
     )
 }
 
