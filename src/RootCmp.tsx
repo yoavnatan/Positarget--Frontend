@@ -17,30 +17,43 @@ import { useAppDispatch, useAppSelector } from './store/store'
 import { setIsAuthShown, setIsModalShown } from './store/slices/system.slice'
 import { Modal } from './cmps/Modal'
 
+import { motion, AnimatePresence } from 'framer-motion'
 
 export function RootCmp() {
-    const { isAuthShown } = useAppSelector((state) => state.systemModule)
-    const { isModalShown } = useAppSelector((state) => state.systemModule)
+    const { isAuthShown, isModalShown } = useAppSelector((state) => state.systemModule)
     const dispatch = useAppDispatch()
 
-    useEffect(() => {
-        if (isAuthShown) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = 'unset';
-        }
-        return () => {
-            document.body.style.overflow = 'unset';
-        };
-    }, [isAuthShown]);
+    const closeAll = () => {
+        dispatch(setIsAuthShown(false))
+        dispatch(setIsModalShown(false))
+    }
 
     return (
         <div className="main-container">
-            {isAuthShown && <div className="overlay" onClick={() => dispatch(setIsAuthShown(false))}></div>}
-            {isModalShown && <div className="overlay" onClick={() => dispatch(setIsModalShown(false))}></div>}
+            <AnimatePresence>
+                {/* ניהול ה-Overlay תחת AnimatePresence */}
+                {(isAuthShown || isModalShown) && (
+                    <motion.div
+                        key="app-overlay"
+                        className="overlay"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 0.7 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        onClick={closeAll}
+                    />
+                )}
+
+                {/* ניהול המודאל */}
+                {isAuthShown && (
+                    <Modal key="auth-modal">
+                        <LoginSignup />
+                    </Modal>
+                )}
+            </AnimatePresence>
+
             <AppHeader />
             <AppMsg />
-            {isAuthShown && <LoginSignup />}
 
             <main>
                 <Routes>
@@ -48,13 +61,10 @@ export function RootCmp() {
                     <Route path="about" element={<AboutUs />} />
                     <Route path="market/:marketId" element={<MarketDetails />} />
                     <Route path="user/:id" element={<UserDetails />} />
-                    <Route path="admin" element={<AdminIndex />} >
-                    </Route>
+                    <Route path="admin" element={<AdminIndex />} />
                 </Routes>
             </main>
             <AppFooter />
-        </div >
+        </div>
     )
 }
-
-

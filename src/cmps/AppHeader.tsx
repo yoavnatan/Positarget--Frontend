@@ -16,6 +16,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import useClickOutside from '../customHooks/useClickOutside'
 import { Modal } from './Modal'
 import { useForm } from '../customHooks/useForm'
+import { convertToUsdc } from '../services/currencyAPI'
+import * as Select from '@radix-ui/react-select';
+import { ChevronDownIcon } from '@radix-ui/react-icons';
 
 export function AppHeader() {
 	const carouselRef = useRef<HTMLDivElement>(null)
@@ -25,10 +28,11 @@ export function AppHeader() {
 	const dispatch = useAppDispatch()
 	const { user } = useAppSelector((state) => state.userModule)
 	const navigate = useNavigate()
-	const [depositFields, handleDepositChange] = useForm({ amount: 0 })
+	const [depositFields, handleDepositChange] = useForm({ amount: 0, currency: 'ILS' })
 	const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
 	const [isNotificationsMenuOpen, setIsNotificationsMenuOpen] = useState(false)
 	const [isSearchOpen, setIsSearchOpen] = useState(false)
+	const [convertedAmount, setConvertedAmount] = useState<number | null>(0)
 	const timeoutRef = useRef<number | null>(null);
 	const dropdownRef = useRef<HTMLDivElement>(null);
 	const buttonRef = useRef<HTMLDivElement>(null);
@@ -58,6 +62,10 @@ export function AppHeader() {
 			}
 		}
 	}, [])
+
+	useEffect(() => {
+		onConvertCurrency()
+	}, [depositFields])
 
 	useEffect(() => {
 		if (user) dispatch(fetchUserDetails(user._id))
@@ -97,37 +105,79 @@ export function AppHeader() {
 
 	async function handleDeposit(ev: React.MouseEvent) {
 		ev.preventDefault()
-		const amount = depositFields.amount
 
-		if (amount <= 0) return // בדיקה בסיסית
+		if (!convertedAmount || convertedAmount <= 0) return
 
 		try {
-			// כאן תפעיל את ה-action שלך, לדוגמה:
-			// await dispatch(updateUserCash(amount))
-			await dispatch(updateUserCash(amount)).unwrap()
-			console.log('Depositing:', amount)
+
+			await dispatch(updateUserCash(convertedAmount)).unwrap()
+			console.log('Depositing:', convertedAmount)
 			dispatch(setIsModalShown(false))
-			dispatch(setMsg({ txt: `Successfully deposited $${amount}`, type: 'success' }))
+			dispatch(setMsg({ txt: `Successfully deposited $${convertedAmount}`, type: 'success' }))
 		} catch (err) {
 			dispatch(setMsg({ txt: 'Deposit failed', type: 'error' }))
 		}
 	}
 
+	async function onConvertCurrency() {
+		const converted = await convertToUsdc(depositFields.currency, depositFields.amount)
+		console.log(converted)
+		console.log(`Converted amount for${depositFields.currency} in USDC:`, converted)
+		if (converted >= 0) setConvertedAmount(converted)
+	}
+
+
+
 	return (
 		<>
-			{isModalShown && (<Modal>
-				<header>Deposit Funds</header>
-				<input type="number"
-					placeholder="Amount"
-					name="amount"
-					value={depositFields.amount}
-					onChange={handleDepositChange}
-				/>
-				<div className="btns">
-					<button className="confirm-btn signup-link" onClick={(ev) => handleDeposit(ev)}>Confirm</button>
-					<button className="cancel-btn login-link" onClick={() => dispatch(setIsModalShown(false))}>Cancel</button>
-				</div>
-			</Modal>)}
+			<AnimatePresence>
+
+				{isModalShown && (<Modal>
+					<header>Deposit Funds</header>
+					<div className="inputs-container flex">
+						<input
+							type="text"             // משנים מ-number ל-text למניעת קפיצות
+							inputMode="decimal"     // פותח מקלדת מספרים בנייד
+							placeholder="0.00"
+							name="amount"
+							value={depositFields.amount || ''}
+							onChange={handleDepositChange}
+							className="amount-input"
+						/>
+						<Select.Root
+							value={depositFields.currency || 'USD'}
+							onValueChange={(val) => handleDepositChange({ target: { name: 'currency', value: val } } as any)}
+						>
+							<Select.Trigger className="currency-select radix-trigger">
+								<Select.Value />
+								<Select.Icon className="radix-icon">
+									<ChevronDownIcon />
+								</Select.Icon>
+							</Select.Trigger>
+
+							<Select.Portal>
+								<Select.Content className="radix-content" position="popper" sideOffset={5}>
+									<Select.Viewport>
+										<Select.Item value="USD" className="radix-item">
+											<Select.ItemText>USD</Select.ItemText>
+										</Select.Item>
+										<Select.Item value="ILS" className="radix-item">
+											<Select.ItemText>ILS</Select.ItemText>
+										</Select.Item>
+									</Select.Viewport>
+								</Select.Content>
+							</Select.Portal>
+						</Select.Root>
+					</div>
+					{convertedAmount ? <h2>{convertedAmount.toFixed(2)} USDC</h2> : <h2>0.00 USDC</h2>}
+					<div className="btns">
+						<button className="confirm-btn signup-link" onClick={(ev) => handleDeposit(ev)}>Confirm</button>
+						<button className="cancel-btn login-link" onClick={() => dispatch(setIsModalShown(false))}>Cancel</button>
+					</div>
+				</Modal>)}
+
+			</AnimatePresence>
+
 
 			<header className="app-header full">
 				<div className="inner-container">
@@ -180,7 +230,7 @@ export function AppHeader() {
 								</div>
 								<div className="info-item flex">
 									<h5>Cash</h5>
-									<h5 className='sum'>${user.cash || '0.00'}</h5>
+									<h5 className='sum'>${user.cash?.toFixed(2) || '0.00'}</h5>
 								</div>
 								<div className="signup-link" onClick={() => dispatch(setIsModalShown(true))}>Deposit</div>
 								<div className="bell info-item" ref={buttonRef} onClick={(ev) => {
