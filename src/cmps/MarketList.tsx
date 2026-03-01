@@ -1,4 +1,6 @@
+import { polyImgs } from '../services/imgs'
 import { userService } from '../services/user'
+import { getRandomIntInclusive } from '../services/util.service'
 import { Market } from '../types/market'
 import { MarketPreview } from './MarketPreview'
 
@@ -21,7 +23,7 @@ export function MarketList({ markets, onRemoveMarket, onUpdateMarket }: MarketLi
         <ul className="market-list">
             {markets.map((market: Market) =>
                 <li key={market._id}>
-                    <MarketPreview market={market} />
+                    <MarketPreview market={market} img={polyImgs[getRandomIntInclusive(0, polyImgs.length - 1)]} />
                     {shouldShowActionBtns(market) && <div className="actions">
                         <button onClick={() => onUpdateMarket(market)}>Edit</button>
                         <button onClick={() => onRemoveMarket(market._id)}>x</button>

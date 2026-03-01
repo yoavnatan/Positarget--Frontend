@@ -1,22 +1,19 @@
 .market-list {
-    --min-column-size: 220px;
+    --min-column-size: 250px;
 
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(var(--min-column-size), 1fr));
-    gap: .5em;
+    gap: 1em;
+
 
     & li {
-        display: grid;
-        grid-template-columns: max-content auto;
+        position: relative;
+        border-radius: 7.2px;
+        background-color: var(--pt-white);
         padding: .5em;
-        background-color: var(--clr2);
+        border: 1px solid var(--border-gray);
+        height: 180px;
+        box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
 
-        .actions {
-            justify-self: end;
-
-            & button {
-                padding: .3em .5em;
-            }
-        }
     }
 }

@@ -31,29 +31,18 @@
     }
 }
 
-.currency-select {
-    padding: 0.8em;
-    border-radius: 7.2px;
-    border: 1px solid var(--border-gray);
-    width: max-content;
-    height: 50px;
-}
 
-/* הטריגר מחליף את ה-currency-select המקורי */
 .radix-trigger {
     all: unset;
-    /* מבטל עיצובי כפתור דיפולטיביים */
     display: inline-flex;
     align-items: center;
     justify-content: space-between;
 
-    /* הערכים שלך */
     padding: 0 0.8em;
     border-radius: 7.2px;
     border: 1px solid var(--border-gray);
     background-color: var(--pt-white);
     width: 100px;
-    /* או max-content לפי הצורך */
     height: 50px;
     box-sizing: border-box;
     font-size: .8em;
@@ -71,7 +60,6 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     border: 1px solid var(--border-gray);
     z-index: 1100;
-    /* מעל המודאל */
     min-width: 100px;
 
 }
@@ -91,7 +79,6 @@
     /* color: white; */
 }
 
-/* מצב רגיל - אנימציה חלקה */
 .radix-icon {
     display: flex;
     align-items: center;
@@ -99,7 +86,6 @@
     transition: transform 0.3s cubic-bezier(0.87, 0, 0.13, 1);
 }
 
-/* כשהתפריט פתוח - סובב ב-180 מעלות */
 .radix-trigger[data-state='open'] .radix-icon {
     transform: rotate(180deg);
 }
@@ -112,23 +98,16 @@
     z-index: 1100;
     min-width: 100px;
 
-    /* אנימציית כניסה */
     animation: slideDown 0.2s ease-out;
 }
 
-/* ל-Input בתוך המודאל */
 .modal input:focus {
-    /* outline: none; */
-    /* מבטל את הדיפולט של הדפדפן */
-    outline: 1px solid var(--input-gray);
-
+    outline: 2px solid var(--input-gray);
 }
 
-/* ל-Radix Trigger (ה-Select) */
 .radix-trigger:focus {
     outline: none;
     border-color: var(--border-gray);
-    /* שים לב: אם אין לך משתנה RGB, פשוט תשתמש בצבע הישיר */
     box-shadow: 0 0 0 0 var(--border-gray);
 }
 

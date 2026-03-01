@@ -14,5 +14,14 @@ export default defineConfig({
 	// define: {
 	// 	'process.env.VITE_LOCAL': 'true'
 	// }
-
+	server: {
+		proxy: {
+			// כל בקשה שתתחיל ב- /poly-api תופנה לפולימרקט
+			'/poly-api': {
+				target: 'https://gamma-api.polymarket.com',
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/poly-api/, ''),
+			},
+		},
+	},
 })
