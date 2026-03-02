@@ -1,4 +1,4 @@
-.market-index {
+.event-index {
     & header {
         display: flex;
         align-items: center;
@@ -13,6 +13,6 @@
     }
 
     & button {
-        margin-inline-end: 0;
+        margin: 0;
     }
 }

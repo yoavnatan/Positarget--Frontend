@@ -187,7 +187,7 @@ export function AppHeader() {
 							<div className='inter-font-bold'>Positarget</div>
 						</NavLink>
 						{/* <NavLink to="about">About</NavLink>
-				<NavLink to="market">Markets</NavLink> */}
+				<NavLink to="event">Events</NavLink> */}
 
 						<div className="search-container wide-screen" ref={searchRef} onClick={() => setIsSearchOpen(true)}>
 							<input type="text" placeholder="Search" />

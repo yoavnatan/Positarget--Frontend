@@ -1,11 +1,11 @@
 import { configureStore } from '@reduxjs/toolkit'
-import { marketReducer } from './slices/market.slice'
+import { eventReducer } from './slices/event.slice'
 import { userReducer } from './slices/user.slice'
 import { systemReducer } from './slices/system.slice'
 
 export const store = configureStore({
     reducer: {
-        marketModule: marketReducer,
+        eventModule: eventReducer,
         userModule: userReducer,
         systemModule: systemReducer,
     },
@@ -23,15 +23,15 @@ export const useAppDispatch: () => AppDispatch = useDispatch
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector
 
 //Usage: import { useAppDispatch, useAppSelector } from '../store/store'
-// import { loadMarkets } from '../store/slices/market.slice'
+// import { loadEvents } from '../store/slices/event.slice'
 
-// export function MarketIndex() {
-//     // TypeScript יודע ש-markets הוא מערך של רכבים בזכות ה-useAppSelector
-//     const { markets, isLoading } = useAppSelector(state => state.marketModule)
+// export function EventIndex() {
+//     // TypeScript יודע ש-events הוא מערך של רכבים בזכות ה-useAppSelector
+//     const { events, isLoading } = useAppSelector(state => state.eventModule)
 //     const dispatch = useAppDispatch()
 
 //     useEffect(() => {
-//         dispatch(loadMarkets()) // הדיספאץ' מכיר עכשיו Thunks אסינכרוניים
+//         dispatch(loadEvents()) // הדיספאץ' מכיר עכשיו Thunks אסינכרוניים
 //     }, [])
 
 //     // ...

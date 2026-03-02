@@ -19,10 +19,10 @@
 @import "cmps/Modal.css";
 @import "cmps/AppMsg.css";
 
-@import "cmps/market/MarketIndex";
-@import "cmps/market/MarketList";
-@import "cmps/market/MarketPreview";
-@import "cmps/market/MarketFilter";
+@import "cmps/event/EventIndex";
+@import "cmps/event/EventList";
+@import "cmps/event/EventPreview";
+@import "cmps/event/EventFilter";
 
 @import "cmps/review/ReviewEdit";
 @import "cmps/review/ReviewList";

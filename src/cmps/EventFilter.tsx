@@ -1,8 +1,8 @@
-import { FilterBy } from '../types/market'
+import { FilterBy } from '../types/event'
 import { useForm } from '../customHooks/useForm'
 import { useEffectUpdate } from '../customHooks/useEffectUpdate'
 
-export function MarketFilter({ filterBy, setFilterBy }: { filterBy: FilterBy, setFilterBy: (filterBy: FilterBy) => void }) {
+export function EventFilter({ filterBy, setFilterBy }: { filterBy: FilterBy, setFilterBy: (filterBy: FilterBy) => void }) {
 
     const [filterToEdit, handleChange, setFilterToEdit] = useForm(structuredClone(filterBy))
 
@@ -20,7 +20,7 @@ export function MarketFilter({ filterBy, setFilterBy }: { filterBy: FilterBy, se
     }
 
     return (
-        <section className="market-filter">
+        <section className="event-filter">
             <h3>Filter:</h3>
             <input
                 type="text"

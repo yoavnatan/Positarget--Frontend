@@ -3,10 +3,10 @@ import { Routes, Route } from 'react-router'
 
 import { HomePage } from './pages/HomePage'
 import { AboutUs } from './pages/AboutUs'
-import { MarketIndex } from './pages/MarketIndex'
+import { EventIndex } from './pages/EventIndex'
 import { AdminIndex } from './pages/AdminIndex'
 
-import { MarketDetails } from './pages/MarketDetails'
+import { EventDetails } from './pages/EventDetails'
 import { UserDetails } from './pages/UserDetails'
 
 import { AppHeader } from './cmps/AppHeader'
@@ -57,9 +57,9 @@ export function RootCmp() {
 
             <main>
                 <Routes>
-                    <Route path="" element={<MarketIndex />} />
+                    <Route path="" element={<EventIndex />} />
                     <Route path="about" element={<AboutUs />} />
-                    <Route path="market/:marketId" element={<MarketDetails />} />
+                    <Route path="event/:eventId" element={<EventDetails />} />
                     <Route path="user/:id" element={<UserDetails />} />
                     <Route path="admin" element={<AdminIndex />} />
                 </Routes>

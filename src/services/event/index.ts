@@ -2,25 +2,27 @@ const { DEV, VITE_LOCAL } = import.meta.env
 
 declare global {
     interface Window {
-        marketService: typeof marketService;
+        eventService: typeof eventService;
     }
 }
 
-import { FilterBy, Market } from '../../types/market';
+import { FilterBy, Event } from '../../types/event';
 import { getRandomIntInclusive, makeId } from '../util.service'
 
-import { marketService as local } from './market.service.local'
-import { marketService as remote } from './market.service.remote'
+import { eventService as local } from './event.service.local'
+import { eventService as remote } from './event.service.remote'
 
-function getEmptyMarket(): Market {
+function getEmptyEvent(): Event {
     return {
         _id: '',
         title: makeId(),
         description: '',
         status: 'open',
         endDate: Date.now() + getRandomIntInclusive(1, 7) * 24 * 60 * 60 * 1000, // 1-7 days from now
-        yesShares: 0,
-        noShares: 0,
+        markets: [],
+        category: '',
+        volume: 0,
+        imgUrl: '',
         msgs: []
     }
 }
@@ -35,9 +37,9 @@ function getDefaultFilter(): FilterBy {
 }
 
 const service = (VITE_LOCAL === 'true') ? local : remote
-export const marketService = { getEmptyMarket, getDefaultFilter, ...service }
+export const eventService = { getEmptyEvent, getDefaultFilter, ...service }
 
 // Easy access to this service from the dev tools console
 // when using script - dev / dev:local
 
-if (DEV) window.marketService = marketService
+if (DEV) window.eventService = eventService
