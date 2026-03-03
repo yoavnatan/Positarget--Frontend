@@ -73,10 +73,8 @@ export function EventIndex() {
 
         observer.current = new IntersectionObserver(entries => {
             if (entries[0].isIntersecting) {
-                // אנחנו משתמשים ב-Functional Update כדי לקבל תמיד את הערך הכי מעודכן
                 setAutoLoadCount(prevCount => {
                     if (prevCount < 2) {
-                        // אם עדיין מותר לטעון אוטומטית
                         setPage(prevPage => {
                             const nextPage = prevPage + 1
                             dispatch(loadEvents({ filterBy, categorie, page: nextPage }))
@@ -84,16 +82,14 @@ export function EventIndex() {
                         })
                         return prevCount + 1
                     } else {
-                        // הגענו לגבול - מכבים אוטומציה
                         setIsAutoLoad(false)
-                        return 0 // מאפסים לסבב הבא שילחצו על הכפתור
+                        return 0
                     }
                 })
             }
         })
         if (node) observer.current.observe(node)
     }, [isLoading, isAutoLoad, hasMore, dispatch, filterBy, categorie])
-    // שים לב: הוצאנו את page ו-autoLoadCount מה-dependencies!
 
     return (
         <section className="event-index">
@@ -109,24 +105,20 @@ export function EventIndex() {
                 onUpdateEvent={onUpdateEvent} />
             <div className="pagination-container" style={{ textAlign: 'center', margin: '20px' }}>
 
-                {/* הצגת הודעת סיום אם אין יותר נתונים */}
                 {!hasMore && events.length > 0 && (
                     <p className="end-of-results">No more markets to show</p>
                 )}
 
-                {/* כפתור Show More - מופיע רק אם יש עוד נתונים, אנחנו לא בטעינה, ולא במצב אוטומטי */}
                 {hasMore && !isAutoLoad && !isLoading && (
                     <button className="btn-pagination" onClick={onLoadMore}>
                         Show more markets
                     </button>
                 )}
 
-                {/* לואדר בזמן טעינה (לא דף 0) */}
                 <div className="loader-fixed-height" style={{ height: '50px' }}>
                     {isLoading && page > 0 && <Loader />}
                 </div>
 
-                {/* אלמנט ה-Ref לגלילה - קיים רק כשיש עוד מה לטעון ואנחנו במצב אוטומטי */}
                 {hasMore && isAutoLoad && (
                     <div ref={lastEventElementRef} style={{ height: '20px' }}></div>
                 )}

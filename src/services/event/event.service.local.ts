@@ -47,6 +47,17 @@ async function query(filterBy: FilterBy, categorie: string, page: number) {
 
     return events
 }
+async function getEventsByIds(eventIds: string[]): Promise<Event[]> {
+    // אנחנו יוצרים מערך של Promises לכל ID
+    const promises = eventIds.map(id =>
+        // שים לב: כאן אין ?closed=false! אנחנו רוצים את האמת, גם אם היא סגורה.
+        fetch(`/poly-api/event/${id}`).then(res => res.json())
+    );
+
+    const rawEvents = await Promise.all(promises);
+    // משתמשים בפונקציית הנירמול שכבר כתבת (processRawEvents)
+    return processRawEvents(rawEvents);
+}
 
 function getById(eventId: string): Promise<Event> {
     return storageService.get(STORAGE_KEY, eventId)
@@ -206,7 +217,7 @@ function processRawEvents(combined: any[]): Event[] {
     const uniqueMap = new Map<string, any>();
     combined.forEach(ev => {
         if (ev?.id) uniqueMap.set(ev.id, ev);
-    });
+    }); // מחיקת כפילויות על ידי שימוש במפה עם מזהה האירוע כמפתח
 
     const uniqueRawEvents = Array.from(uniqueMap.values());
 
@@ -215,12 +226,6 @@ function processRawEvents(combined: any[]): Event[] {
             let outcomes = typeof m.outcomes === 'string' ? JSON.parse(m.outcomes) : m.outcomes;
             let rawPrices = typeof m.outcomePrices === 'string' ? JSON.parse(m.outcomePrices) : m.outcomePrices;
 
-            let icons = [];
-            try {
-                icons = typeof m.groupItemIds === 'string' ? JSON.parse(m.groupItemIds) : (m.groupItemIds || []);
-            } catch (e) {
-                icons = [];
-            }
 
             const outcomesList = Array.isArray(outcomes) ? outcomes : ["Yes", "No"];
             const prices = Array.isArray(rawPrices)
@@ -233,13 +238,12 @@ function processRawEvents(combined: any[]): Event[] {
                 outcomes: outcomesList,
                 outcomePrices: prices,
                 clobTokenIds: m.clobTokenIds || [],
-                icons: icons
             };
-        });
+        }); // נירמול שווקים
 
         if (markets.length === 0) {
             markets.push({
-                id: ev.id, question: ev.title, outcomes: ["Yes", "No"], outcomePrices: [50, 50], clobTokenIds: [], icons: []
+                id: ev.id, question: ev.title, outcomes: ["Yes", "No"], outcomePrices: [50, 50], clobTokenIds: []
             });
         }
 
@@ -270,10 +274,9 @@ function processRawEvents(combined: any[]): Event[] {
 
 export async function fetchEvents(categoryName?: string, page: number = 0): Promise<Event[]> {
     let accumulatedEvents: Event[] = [];
-    const limit = 20; // הורדנו ל-20
+    const limit = 30;
     let currentOffset = page * limit;
 
-    // צמצמנו ניסיונות: 10 בטעינה ראשונה, 4 בטעינת "עוד"
     const maxAttempts = (page === 0) ? 10 : 4;
     let attempts = 0;
 

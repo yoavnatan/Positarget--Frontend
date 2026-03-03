@@ -6,7 +6,6 @@ export interface Market { // השוק הספציפי בתוך האירוע
     outcomePrices: number[]; // ["0.55", "0.45"]
     outcomes: string[];      // ["Yes", "No"]
     clobTokenIds: string[];
-    icons: string[]; // מזהי האייקונים עבור ספורט (אם יש)
 }
 
 export interface Event { // זה ה"כרטיס" (Card) שלך
