@@ -57,7 +57,8 @@ export function RootCmp() {
 
             <main>
                 <Routes>
-                    <Route path="" element={<EventIndex />} />
+                    <Route path="/" element={<EventIndex />} />
+                    <Route path="/:categorie" element={<EventIndex />} />
                     <Route path="about" element={<AboutUs />} />
                     <Route path="event/:eventId" element={<EventDetails />} />
                     <Route path="user/:id" element={<UserDetails />} />

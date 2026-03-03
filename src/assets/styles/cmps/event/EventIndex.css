@@ -15,4 +15,18 @@
     & button {
         margin: 0;
     }
+
+
+    .btn-pagination {
+        border: 1px solid var(--border-gray);
+        border-radius: 2em;
+        padding: 0.5em 1em;
+        font-size: .9em;
+        font-weight: 600;
+
+        &:hover {
+            background-color: var(--input-gray);
+        }
+
+    }
 }

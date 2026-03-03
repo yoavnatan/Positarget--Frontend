@@ -332,20 +332,20 @@ export function AppHeader() {
 						}}></div>
 
 
-						<NavLink to={`/{${"Politics"}}`}>Politics</NavLink>
-						<NavLink to={`/{${"Sports"}}`}>Sports</NavLink>
-						<NavLink to={`/{${"Crypto"}}`}>Crypto</NavLink>
-						<NavLink to={`/{${"Finance"}}`}>Finance</NavLink>
-						<NavLink to={`/{${"Geopolitics"}}`}>Geopolitics</NavLink>
-						<NavLink to={`/{${"Earnings"}}`}>Earnings</NavLink>
-						<NavLink to={`/{${"Tech"}}`}>Tech</NavLink>
-						<NavLink to={`/{${"Culture"}}`}>Culture</NavLink>
-						<NavLink to={`/{${"World"}}`}>World</NavLink>
-						<NavLink to={`/{${"Economy"}}`}>Economy</NavLink>
-						<NavLink to={`/{${"Climate-science"}}`}>Climate & Science</NavLink>
-						<NavLink to={`/{${"Mentions"}}`}>Mentions</NavLink>
-						<NavLink to={`/{${"World"}}`}>World</NavLink>
-						<NavLink to={`/{${"World"}}`}>World</NavLink>
+						<NavLink to={`/${"Politics"}`}>Politics</NavLink>
+						<NavLink to={`/${"Sports"}`}>Sports</NavLink>
+						<NavLink to={`/${"Crypto"}`}>Crypto</NavLink>
+						<NavLink to={`/${"Finance"}`}>Finance</NavLink>
+						<NavLink to={`/${"Geopolitics"}`}>Geopolitics</NavLink>
+						<NavLink to={`/${"Tech"}`}>Tech</NavLink>
+						<NavLink to={`/${"Culture"}`}>Culture</NavLink>
+						<NavLink to={`/${"World"}`}>World</NavLink>
+						<NavLink to={`/${"Economy"}`}>Economy</NavLink>
+						<NavLink to={`/${"Climate-science"}`}>Climate & Science</NavLink>
+						<NavLink to={`/${"Sports"}`}>Sports</NavLink>
+						<NavLink to={`/${"Crypto"}`}>Crypto</NavLink>
+						<NavLink to={`/${"Finance"}`}>Finance</NavLink>
+						<NavLink to={`/${"Geopolitics"}`}>Geopolitics</NavLink>
 					</nav>
 				</div >
 			</header >

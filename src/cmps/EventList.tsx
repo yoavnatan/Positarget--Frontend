@@ -23,7 +23,7 @@ export function EventList({ events, onRemoveEvent, onUpdateEvent }: EventListPro
         <ul className="event-list">
             {events.map((event: Event) =>
                 <li key={event._id}>
-                    <EventPreview event={event} img={polyImgs[getRandomIntInclusive(0, polyImgs.length - 1)]} />
+                    <EventPreview event={event} />
                     {shouldShowActionBtns(event) && <div className="actions">
                         <button onClick={() => onUpdateEvent(event)}>Edit</button>
                         <button onClick={() => onRemoveEvent(event._id)}>x</button>

@@ -92,10 +92,15 @@
             }
 
 
+            a:hover {
+                color: var(--pt-black2);
+            }
 
             a.active {
                 color: var(--pt-black2);
             }
+
+
 
         }
 

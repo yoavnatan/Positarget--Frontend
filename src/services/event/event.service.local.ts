@@ -23,8 +23,10 @@ export const eventService = {
 window.cs = eventService
 
 
-async function query(filterBy: FilterBy) {
-    var events: Event[] = await storageService.query(STORAGE_KEY)
+async function query(filterBy: FilterBy, categorie: string, page: number) {
+    // var events: Event[] = await storageService.query(STORAGE_KEY)
+    var events: Event[] = await fetchEvents(categorie, page)
+    console.log(events)
     const { txt, sortField, sortDir } = filterBy
 
     if (txt) {
@@ -81,104 +83,241 @@ async function addEventMsg(eventId: string, txt: string) {
 //Demo Data
 
 // --- פונקציה מרכזית לשליפת ונירמול הנתונים ---
-
-export async function fetchDiversePolyeventData(): Promise<Event[]> {
-    const categories = [
+export function getCategories(): string[] {
+    return [
         "Politics", "Sports", "Crypto", "Finance", "Geopolitics",
         "Earnings", "Tech", "Culture", "World", "Economy",
         "Climate-science", "Mentions"
-    ];
+    ]
+}
+// export async function fetchPolyeventData(): Promise<Event[]> {
+//     const categories = [
+//         "Politics", "Sports", "Crypto", "Finance", "Geopolitics",
+//         "Earnings", "Tech", "Culture", "World", "Economy",
+//         "Climate-science", "Mentions"
+//     ];
 
-    try {
-        const topEventsPromise = fetch('/poly-api/events?active=true&closed=false&limit=100&order=volume&ascending=false')
-            .then(res => res.ok ? res.json() : []);
+//     try {
+//         const topEventsPromise = fetch('/poly-api/events?active=true&closed=false&limit=100&order=volume&ascending=false')
+//             .then(res => res.ok ? res.json() : []);
 
-        const categoryPromises = categories.map(category =>
-            fetch(`/poly-api/events?active=true&closed=false&limit=50&tag=${category}`)
-                .then(res => res.ok ? res.json() : [])
-                .catch(() => [])
-        );
+//         const categoryPromises = categories.map(category =>
+//             fetch(`/poly-api/events?active=true&closed=false&limit=100&tag=${category}`)
+//                 .then(res => res.ok ? res.json() : [])
+//                 .catch(() => [])
+//         );
 
-        const [topEvents, ...categoryResults] = await Promise.all([topEventsPromise, ...categoryPromises]);
-        const combined = [...topEvents, ...categoryResults.flat()];
+//         const [topEvents, ...categoryResults] = await Promise.all([topEventsPromise, ...categoryPromises]);
+//         const combined = [...topEvents, ...categoryResults.flat()];
 
-        if (!combined.length) return [];
+//         if (!combined.length) return [];
 
-        const uniqueMap = new Map<string, any>();
-        combined.forEach(ev => {
-            if (ev?.id) uniqueMap.set(ev.id, ev);
-        });
+//         const uniqueMap = new Map<string, any>(); // מחיקת כפילויות
+//         combined.forEach(ev => {
+//             if (ev?.id) uniqueMap.set(ev.id, ev);
+//         });
 
-        const uniqueRawEvents = Array.from(uniqueMap.values());
+//         const uniqueRawEvents = Array.from(uniqueMap.values()); // החזרת מערך האירועים הייחודיים
 
-        return uniqueRawEvents.map(ev => {
-            const markets: Market[] = (ev.markets || []).map((m: any) => {
-                let outcomes = typeof m.outcomes === 'string' ? JSON.parse(m.outcomes) : m.outcomes;
-                let rawPrices = typeof m.outcomePrices === 'string' ? JSON.parse(m.outcomePrices) : m.outcomePrices;
+//         return uniqueRawEvents.map(ev => {
+//             const markets: Market[] = (ev.markets || []).map((m: any) => {
+//                 let outcomes = typeof m.outcomes === 'string' ? JSON.parse(m.outcomes) : m.outcomes;
+//                 let rawPrices = typeof m.outcomePrices === 'string' ? JSON.parse(m.outcomePrices) : m.outcomePrices;
 
-                // חילוץ מזהי התמונות עבור ספורט
-                let icons = [];
-                try {
-                    icons = typeof m.groupItemIds === 'string' ? JSON.parse(m.groupItemIds) : (m.groupItemIds || []);
-                } catch (e) {
-                    icons = [];
-                }
+//                 // חילוץ מזהי התמונות עבור ספורט
+//                 let icons = [];
+//                 try {
+//                     icons = typeof m.groupItemIds === 'string' ? JSON.parse(m.groupItemIds) : (m.groupItemIds || []);
+//                 } catch (e) {
+//                     icons = [];
+//                 }
 
-                const outcomesList = Array.isArray(outcomes) ? outcomes : ["Yes", "No"];
-                const prices = Array.isArray(rawPrices)
-                    ? rawPrices.map(p => Math.round(parseFloat(p) * 100))
-                    : outcomesList.map(() => 50);
+//                 const outcomesList = Array.isArray(outcomes) ? outcomes : ["Yes", "No"];
+//                 const prices = Array.isArray(rawPrices)
+//                     ? rawPrices.map(p => Math.round(parseFloat(p) * 100))
+//                     : outcomesList.map(() => 50);
 
-                return {
-                    id: m.id || ev.id,
-                    question: m.question || ev.title,
-                    outcomes: outcomesList,
-                    outcomePrices: prices,
-                    clobTokenIds: m.clobTokenIds || [],
-                    icons: icons // שמירת המזהים לאייקונים
-                };
-            });
+//                 return {
+//                     id: m.id || ev.id,
+//                     question: m.question || ev.title,
+//                     outcomes: outcomesList,
+//                     outcomePrices: prices,
+//                     clobTokenIds: m.clobTokenIds || [],
+//                     icons: icons // שמירת המזהים לאייקונים
+//                 };
+//             });
 
-            if (markets.length === 0) {
-                markets.push({
-                    id: ev.id, question: ev.title, outcomes: ["Yes", "No"], outcomePrices: [50, 50], clobTokenIds: [], icons: []
-                });
+//             if (markets.length === 0) {
+//                 markets.push({
+//                     id: ev.id, question: ev.title, outcomes: ["Yes", "No"], outcomePrices: [50, 50], clobTokenIds: [], icons: []
+//                 });
+//             }
+
+//             const eventTags: string[] = Array.isArray(ev.tags)
+//                 ? ev.tags.map((t: any) => (typeof t === 'string' ? t : t.label)).filter(Boolean)
+//                 : [];
+
+//             const primaryCat = categories.find(c =>
+//                 eventTags.some(tag => tag.toLowerCase() === c.toLowerCase())
+//             ) || eventTags[0] || 'General';
+
+//             return {
+//                 _id: ev.id,
+//                 title: ev.title || ev.question,
+//                 description: ev.description || "",
+//                 imgUrl: ev.image || "https://polymarket.com/images/default.png",
+//                 status: ev.closed ? 'closed' : 'open',
+//                 endDate: ev.endDate,
+//                 category: primaryCat,
+//                 labels: Array.from(new Set([primaryCat, ...eventTags])),
+//                 markets: markets,
+//                 volume: Math.floor(ev.volume || 0),
+//                 msgs: [],
+//                 createdAt: ev.createdAt ? new Date(ev.createdAt).getTime() : Date.now()
+//             } as Event;
+//         }).sort(() => Math.random() - 0.5);
+
+//     } catch (err) {
+//         console.error("Fetch failed:", err);
+//         return [];
+//     }
+// }
+// --- הרצה ושמירה ---
+
+
+// (async () => {
+//     const demoEvents = await fetchPolyeventData();
+//     console.log("Processed Events:", demoEvents);
+//     if (demoEvents.length > 0) {
+//         saveToStorage(STORAGE_KEY, demoEvents);
+//     }
+// })();
+
+
+const categories = [
+    "Politics", "Sports", "Crypto", "Finance", "Geopolitics",
+    "Earnings", "Tech", "Culture", "World", "Economy",
+    "Climate-science", "Mentions"
+];
+
+function processRawEvents(combined: any[]): Event[] {
+    if (!combined.length) return [];
+
+    const uniqueMap = new Map<string, any>();
+    combined.forEach(ev => {
+        if (ev?.id) uniqueMap.set(ev.id, ev);
+    });
+
+    const uniqueRawEvents = Array.from(uniqueMap.values());
+
+    return uniqueRawEvents.map(ev => {
+        const markets: Market[] = (ev.markets || []).map((m: any) => {
+            let outcomes = typeof m.outcomes === 'string' ? JSON.parse(m.outcomes) : m.outcomes;
+            let rawPrices = typeof m.outcomePrices === 'string' ? JSON.parse(m.outcomePrices) : m.outcomePrices;
+
+            let icons = [];
+            try {
+                icons = typeof m.groupItemIds === 'string' ? JSON.parse(m.groupItemIds) : (m.groupItemIds || []);
+            } catch (e) {
+                icons = [];
             }
 
-            const eventTags: string[] = Array.isArray(ev.tags)
-                ? ev.tags.map((t: any) => (typeof t === 'string' ? t : t.label)).filter(Boolean)
-                : [];
-
-            const primaryCat = categories.find(c =>
-                eventTags.some(tag => tag.toLowerCase() === c.toLowerCase())
-            ) || eventTags[0] || 'General';
+            const outcomesList = Array.isArray(outcomes) ? outcomes : ["Yes", "No"];
+            const prices = Array.isArray(rawPrices)
+                ? rawPrices.map(p => Math.round(parseFloat(p) * 100))
+                : outcomesList.map(() => 50);
 
             return {
-                _id: ev.id,
-                title: ev.title || ev.question,
-                description: ev.description || "",
-                imgUrl: ev.image || "https://polymarket.com/images/default.png",
-                status: ev.closed ? 'closed' : 'open',
-                endDate: ev.endDate,
-                category: primaryCat,
-                labels: Array.from(new Set([primaryCat, ...eventTags])),
-                markets: markets,
-                volume: Math.floor(ev.volume || 0),
-                msgs: [],
-                createdAt: ev.createdAt ? new Date(ev.createdAt).getTime() : Date.now()
-            } as Event;
-        }).sort(() => Math.random() - 0.5);
+                id: m.id || ev.id,
+                question: m.question || ev.title,
+                outcomes: outcomesList,
+                outcomePrices: prices,
+                clobTokenIds: m.clobTokenIds || [],
+                icons: icons
+            };
+        });
 
-    } catch (err) {
-        console.error("Fetch failed:", err);
-        return [];
-    }
+        if (markets.length === 0) {
+            markets.push({
+                id: ev.id, question: ev.title, outcomes: ["Yes", "No"], outcomePrices: [50, 50], clobTokenIds: [], icons: []
+            });
+        }
+
+        const eventTags: string[] = Array.isArray(ev.tags)
+            ? ev.tags.map((t: any) => (typeof t === 'string' ? t : t.label)).filter(Boolean)
+            : [];
+
+        const primaryCat = categories.find(c =>
+            eventTags.some(tag => tag.toLowerCase() === c.toLowerCase())
+        ) || eventTags[0] || 'General';
+
+        return {
+            _id: ev.id,
+            title: ev.title || ev.question,
+            description: ev.description || "",
+            imgUrl: ev.image || "https://polymarket.com/images/default.png",
+            status: ev.closed ? 'closed' : 'open',
+            endDate: ev.endDate,
+            category: primaryCat,
+            labels: Array.from(new Set([primaryCat, ...eventTags])),
+            markets: markets,
+            volume: Math.floor(ev.volume || 0),
+            msgs: [],
+            createdAt: ev.createdAt ? new Date(ev.createdAt).getTime() : Date.now()
+        } as Event;
+    })
 }
-// --- הרצה ושמירה ---
-(async () => {
-    const demoEvents = await fetchDiversePolyeventData();
-    console.log("Processed Events:", demoEvents);
-    if (demoEvents.length > 0) {
-        saveToStorage(STORAGE_KEY, demoEvents);
+
+export async function fetchEvents(categoryName?: string, page: number = 0): Promise<Event[]> {
+    let accumulatedEvents: Event[] = [];
+    const limit = 20; // הורדנו ל-20
+    let currentOffset = page * limit;
+
+    // צמצמנו ניסיונות: 10 בטעינה ראשונה, 4 בטעינת "עוד"
+    const maxAttempts = (page === 0) ? 10 : 4;
+    let attempts = 0;
+
+    let apiTag = categoryName;
+    if (categoryName?.toLowerCase() === 'climate-science') apiTag = 'Climate';
+
+    while (accumulatedEvents.length < limit && attempts < maxAttempts) {
+        attempts++;
+
+        let url = `/poly-api/events?active=true&closed=false&limit=${limit}&offset=${currentOffset}&order=volume&ascending=false`;
+        if (apiTag && apiTag !== 'all') url += `&tag=${encodeURIComponent(apiTag)}`;
+
+        try {
+            const res = await fetch(url);
+            const data = res.ok ? await res.json() : [];
+            if (!data || data.length === 0) break;
+
+            let processed = processRawEvents(data);
+
+            if (categoryName?.toLowerCase() === 'climate-science') {
+                processed = processed.filter(ev =>
+                    ev.labels.some(label =>
+                        label.toLowerCase().includes('climate') ||
+                        label.toLowerCase().includes('science')
+                    )
+                );
+            } else if (categoryName && categoryName !== 'all') {
+                processed = processed.filter(ev =>
+                    ev.labels.some(label => label.toLowerCase() === categoryName.toLowerCase())
+                );
+            }
+
+            accumulatedEvents.push(...processed);
+            currentOffset += limit;
+
+            // אופטימיזציה: אם מצאנו לפחות 10 אירועים, אפשר לעצור כדי לא לעכב את המשתמש
+            if (accumulatedEvents.length >= 10 && categoryName !== 'all') break;
+            if (!categoryName || categoryName === 'all') break;
+
+        } catch (err) {
+            break;
+        }
     }
-})();
+
+    const sorted = accumulatedEvents.sort((a, b) => b.volume - a.volume);
+    return sorted.slice(0, limit);
+}

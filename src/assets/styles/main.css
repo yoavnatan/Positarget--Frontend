@@ -18,6 +18,8 @@
 @import "cmps/AppFooter";
 @import "cmps/Modal.css";
 @import "cmps/AppMsg.css";
+@import "cmps/Loader.css";
+@import "cmps/TopLoader.css";
 
 @import "cmps/event/EventIndex";
 @import "cmps/event/EventList";

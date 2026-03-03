@@ -3,9 +3,17 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import { eventService } from '../../services/event'
 import { FilterBy, Event } from '../../types/event'
 
-export const loadEvents = createAsyncThunk<Event[], FilterBy>('event/loadEvents', async (filterBy: FilterBy): Promise<Event[]> => {
-    return await eventService.query(filterBy) as Promise<Event[]>
-})
+export const loadEvents = createAsyncThunk<
+    { events: Event[]; page: number }, // מחזיר גם את העמוד כדי שנדע מה לעשות ב-Reducer
+    { filterBy: FilterBy; categorie: string; page?: number }
+>(
+    'event/loadEvents',
+    async ({ filterBy, categorie, page = 0 }): Promise<{ events: Event[]; page: number }> => {
+        // שים לב: כאן אתה צריך להעביר את ה-page לפונקציה query ב-service
+        const events = await eventService.query(filterBy, categorie, page) as Event[]
+        return { events, page }
+    }
+)
 
 export const loadEvent = createAsyncThunk<Event, string>('event/loadEvent', async (eventId: string): Promise<Event> => {
     return await eventService.getById(eventId) as Event
@@ -32,11 +40,14 @@ const eventSlice = createSlice({
     initialState: {
         events: [] as Event[],
         event: null as Event | null,
-        isLoading: false, // רלוונטי רק למודול הרכבים
+        isLoading: false, // רלוונטי רק למודול הנוכחי
         isRemoving: false, // אפשר אפילו להפריד סטטוס למחיקה
-        error: null as string | null
+        error: null as string | null,
+        hasMore: true
     },
-    reducers: {},
+    reducers: {
+
+    },
     extraReducers: (builder) => {
         builder
             // טיפול בטעינת רכבים
@@ -45,7 +56,18 @@ const eventSlice = createSlice({
             })
             .addCase(loadEvents.fulfilled, (state, action) => {
                 state.isLoading = false
-                state.events = action.payload
+                const { events, page } = action.payload
+
+                // אם חזרו פחות מ-10 אירועים, כנראה שאין טעם לנסות לטעון עוד דף בעתיד
+                state.hasMore = events.length >= 10
+
+                if (page === 0) {
+                    state.events = events
+                } else {
+                    const existingIds = new Set(state.events.map(ev => ev._id))
+                    const uniqueNewEvents = events.filter(event => !existingIds.has(event._id))
+                    state.events.push(...uniqueNewEvents)
+                }
             })
             .addCase(loadEvents.rejected, (state, action) => {
                 state.isLoading = false

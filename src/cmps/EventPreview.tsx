@@ -13,8 +13,8 @@ export function EventPreview({ event }: { event: Event }) {
         return !['yes', 'up', 'no', 'down'].includes(text)
     }
 
-    const formatPrice = (price: any) => {
-        const numPrice = parseFloat(price)
+    const formatPrice = (price: number | string) => {
+        const numPrice = parseFloat(price.toString())
         if (isNaN(numPrice)) return '0%'
         if (numPrice >= 0 && numPrice < 1) return '<1%'
         return `${Math.round(numPrice)}%`

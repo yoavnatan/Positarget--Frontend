@@ -19,7 +19,8 @@ export interface Event { // זה ה"כרטיס" (Card) שלך
     markets: Market[];       // מערך השווקים שבתוך האירוע
     category: string;        // "Politics", "Crypto" וכו'
     volume: number;
-    msgs: Msg[];              // מערך ההודעות שקשורות לאירוע
+    msgs: Msg[];
+    labels: string[]           // מערך ההודעות שקשורות לאירוע
 }
 export type FilterBy = {
     txt: string
