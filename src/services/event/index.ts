@@ -31,6 +31,7 @@ function getEmptyEvent(): Event {
 function getDefaultFilter(): FilterBy {
     return {
         txt: '',
+        labels: [],
         sortField: '',
         sortDir: 1,
     }

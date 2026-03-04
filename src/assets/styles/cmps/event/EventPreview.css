@@ -56,12 +56,11 @@
     .odds-info {
 
         position: absolute;
-        top: 28px;
-        right: 20px;
+        top: 26px;
+        right: 15.5px;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 4px;
 
         .number {
             font-weight: 400;
@@ -69,7 +68,7 @@
 
         .text {
             font-weight: 400;
-            font-size: .8em;
+            font-size: .9em;
             color: var(--pt-gray)
         }
     }
@@ -147,22 +146,23 @@
 
     .action-btn {
         padding: 6px 12px;
-        font-size: .9em;
     }
 }
 
 .multi-options {
     width: 100%;
-    height: 65px;
+    height: 72px;
     overflow: scroll;
     overflow-y: auto;
     overflow-x: hidden;
+
+
 
 }
 
 .option-name {
     font-weight: 400;
-    font-size: .8em;
+    font-size: .85em;
 }
 
 .btn-group {

@@ -1,67 +1,78 @@
-.event-filter {
-    display: grid;
-    grid-template-columns: 1fr 5em 5em auto;
+ul.filter-carusel {
+    margin: 1fr;
+    display: flex;
     align-items: center;
-    gap: 0 .5em;
-
-    background-color: var(--clr4);
-    padding: .5em;
-
-    & h3 {
-        grid-column: 1 / -1;
-        font-size: .9em;
-        margin: 0;
-    }
-
-    :not(h3) {
-        cursor: pointer;
-    }
-
-    & input:is([type="text"], [type="number"]) {
-        height: 1.8em;
-        border: none;
-        border-block-end: 1px solid var(--gray1);
-
-        &:focus {
-            outline: none;
-            background-color: var(--gray1);
-        }
-    }
+    gap: 1em;
+    justify-content: space-between;
+    /* font-size: .8em; */
+    font-family: izmir;
 
 
-    .btn-clear {
-        grid-column: 4;
-    }
 
-    .sort-field,
-    .sort-dir {
-        display: flex;
-        align-items: center;
-        gap: 1em;
+    display: flex;
+    gap: 1em;
+    overflow-x: auto;
+    padding-bottom: 10px;
 
-        /* margin-inline-start: .4em; */
+    white-space: nowrap;
+    scrollbar-width: none;
+    align-items: center;
 
-        font-size: .8em;
-    }
+    font-size: .9em;
+    font-weight: 480;
 
-    .sort-dir {
-        grid-column: 2 / 3;
-    }
-
-    >input[type="radio"] {
+    &::-webkit-scrollbar {
         display: none;
     }
 
-    & label {
-        >span {
-            font-size: .9em;
-            padding: 0.1em 0.3em;
-            outline: 1px solid var(--gray1);
-        }
+    transition: mask-image 0.3s ease,
+    -webkit-mask-image 0.3s ease;
 
-        &:has(:checked) span {
-            background-color: var(--clr3);
-            color: var(--gray1);
-        }
+
+    --mask-left: black;
+    --mask-right: black;
+
+    &.scrolled-left {
+        --mask-left: transparent;
     }
+
+    &.scrolled-right {
+        --mask-right: transparent;
+    }
+
+    mask-image: linear-gradient(to right, var(--mask-left), black 10%, black 90%, var(--mask-right));
+    -webkit-mask-image: linear-gradient(to right, var(--mask-left), black 10%, black 90%, var(--mask-right));
+
+    &>* {
+        cursor: pointer;
+        display: flex;
+        gap: .5em;
+        align-items: center;
+        color: var(--pt-gray);
+        flex-shrink: 0;
+    }
+
+
+    li:hover {
+        color: var(--pt-black2);
+    }
+
+    li.active {
+        color: var(--button-blue-hover);
+        background-color: var(--button-blue-light);
+        padding: .5em 0.6em;
+        border-radius: 7.2px;
+
+    }
+
+}
+
+
+.filter-carusel::-webkit-scrollbar {
+    display: none;
+
+}
+
+.event-filter h3 {
+    margin-top: 0.6em;
 }

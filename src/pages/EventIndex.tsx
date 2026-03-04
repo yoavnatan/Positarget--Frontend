@@ -19,14 +19,25 @@ export function EventIndex() {
     const [autoLoadCount, setAutoLoadCount] = useState(0)
     const { events, isLoading, hasMore } = useAppSelector(state => state.eventModule)
     const { categorie } = useParams() as { categorie: string }
-    console.log('categorie', categorie)
+    const [eventsToShow, setEventsToShow] = useState<Event[]>([])
 
     useEffect(() => {
         setIsAutoLoad(false)
         setPage(0)
         setAutoLoadCount(0)
         dispatch(loadEvents({ filterBy, categorie, page: 0 }))
-    }, [filterBy, categorie])
+        setFilterBy(eventService.getDefaultFilter())
+    }, [categorie])
+
+    useEffect(() => {
+        console.log(filterBy)
+        if (filterBy.labels.length > 0) {
+            const filteredEvents = events.filter(ev => filterBy.labels.some(label => ev.labels.includes(label)))
+            setEventsToShow(filteredEvents)
+        } else {
+            setEventsToShow(events)
+        }
+    }, [filterBy, events])
 
     async function onRemoveEvent(eventId: string) {
         try {
@@ -98,9 +109,9 @@ export function EventIndex() {
             <header>
                 {/* {userService.getLoggedinUser() && <button onClick={onAddEvent}>Add a Event</button>} */}
             </header>
-            {/* <EventFilter filterBy={filterBy} setFilterBy={setFilterBy} /> */}
+            <EventFilter filterBy={filterBy} setFilterBy={setFilterBy} />
             <EventList
-                events={events}
+                events={eventsToShow}
                 onRemoveEvent={onRemoveEvent}
                 onUpdateEvent={onUpdateEvent} />
             <div className="pagination-container" style={{ textAlign: 'center', margin: '20px' }}>
