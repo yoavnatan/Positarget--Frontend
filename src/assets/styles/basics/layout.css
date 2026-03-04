@@ -1,6 +1,10 @@
 .main-container {
     display: grid;
-    grid-template-columns: minmax(20px, 1fr) minmax(auto, 1200px) minmax(20px, 1fr);
+    grid-template-columns: minmax(20px, 1fr) minmax(0, 1200px) minmax(20px, 1fr);
+
+    @media (max-width: 624px) {
+        grid-template-columns: minmax(16px, 1fr) minmax(0, 624px) minmax(16px, 1fr);
+    }
 
     >* {
         grid-column: 2;
@@ -10,6 +14,8 @@
         }
     }
 }
+
+
 
 .sample-grid-layout {
     display: grid;

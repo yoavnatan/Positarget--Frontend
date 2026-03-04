@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Event, Market } from '../types/event'
 import PieChartWithPaddingAngle from './pieChart'
+import { IoBookmark, IoBookmarkOutline } from "react-icons/io5";
 
 export function EventPreview({ event }: { event: Event }) {
     const mainMarket = event.markets?.[0]
@@ -119,9 +120,9 @@ export function EventPreview({ event }: { event: Event }) {
                 <div className="event-footer flex space-between">
                     <div className="volume-info">
                         <span className="label">Vol.</span>
-                        <span className="value">${(event.volume || 0).toLocaleString()}</span>
+                        <span className="value"> ${(event.volume || 0).toLocaleString()}</span>
                     </div>
-                    <span className="category-tag">{event.category}</span>
+                    <span className="category-tag"><IoBookmarkOutline /></span>
                 </div>
             </footer>
         </article>

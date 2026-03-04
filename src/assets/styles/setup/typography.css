@@ -13,6 +13,12 @@
 }
 
 @font-face {
+    font-family: "izmir-light";
+    src: url(../fonts/Izmir/Izmir-Light.otf) format("truetype");
+    font-weight: 500;
+}
+
+@font-face {
     font-family: "izmir";
     src: url(../fonts/Izmir/Izmir-Regular.otf) format("truetype");
     font-weight: 500;

@@ -23,7 +23,8 @@ function getEmptyEvent(): Event {
         category: '',
         volume: 0,
         imgUrl: '',
-        msgs: []
+        msgs: [],
+        labels: []
     }
 }
 

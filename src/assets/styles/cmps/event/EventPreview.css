@@ -15,7 +15,7 @@
     main {
         grid-row: 2/3;
         align-self: end;
-        margin-bottom: 8px;
+        margin-bottom: 4px;
     }
 
     .event-info {
@@ -89,6 +89,12 @@
     align-items: center;
     grid-template-columns: 50px 1fr;
     margin-block-end: 8px;
+
+    .option-name {
+        font-family: izmir;
+    }
+
+
 }
 
 .action-btn {
@@ -172,23 +178,40 @@
 }
 
 
+
 footer {
-    font-size: .9em;
+    font-family: izmir;
+    font-size: .8em;
     font-weight: 400;
     color: var(--pt-gray);
     /* margin-top: 8px; */
     justify-content: space-between;
     width: 100%;
     grid-row: 3;
-    align-self: end;
+    align-items: end;
 
     div {
         width: 100%;
+    }
+
+    span {
+        font-size: 1.3em;
+        /* margin-top: 5px; */
+        transform: translate(-6px, 4px);
+
+        :hover {
+            cursor: pointer;
+            background-color: var(--border-gray);
+            outline: var(--border-gray) solid 5px;
+            border-radius: 50%;
+        }
     }
 }
 
 .price-label {
     margin-right: 4px;
+    font-family: izmir-medium;
+    font-size: 1.1em;
 }
 
 .btn-group:has(.sport) {

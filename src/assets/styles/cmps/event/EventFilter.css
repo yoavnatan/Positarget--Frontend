@@ -10,7 +10,7 @@ ul.filter-carusel {
 
 
     display: flex;
-    gap: 1em;
+    gap: 1.5em;
     overflow-x: auto;
     padding-bottom: 10px;
 
@@ -73,6 +73,100 @@ ul.filter-carusel {
 
 }
 
-.event-filter h3 {
-    margin-top: 0.6em;
+.filter-icons {
+    display: flex;
+    font-size: 1.3em;
+    gap: 8px;
+
+    >* {
+        height: 35px;
+    }
+
+    >*:hover {
+        background-color: var(--border-gray);
+        /* outline: var(--border-gray) solid 5px; */
+        border-radius: 7.2px;
+        cursor: pointer;
+
+        &:hover {
+            color: var(--pt-black2);
+            background-color: var(--border-gray);
+        }
+    }
+}
+
+.icon-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 35px;
+    height: 35px;
+    border-radius: 7.2px;
+
+    &:hover {
+        color: var(--pt-black2);
+        background-color: var(--border-gray);
+    }
+}
+
+.filter-icons .search-container {
+    display: flex;
+    align-items: center;
+    position: relative;
+    width: 30px;
+    transition: width .5s ease;
+    overflow: hidden;
+
+    input {
+        position: absolute;
+        left: 0;
+        width: 100%;
+        padding: 0;
+        border: 1px solid var(--border-gray);
+        border-radius: 7.2px;
+        background-color: var(--input-gray);
+        opacity: 0;
+        pointer-events: none;
+        transition: all .5s ease;
+        height: 35px;
+
+    }
+
+    input:focus {
+        outline: 1px solid var(--border-gray);
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        background-color: var(--input-gray);
+    }
+
+    .search-icon {
+        z-index: 1;
+        position: absolute;
+        left: 5px;
+    }
+
+
+    &.open {
+        width: 200px;
+
+        &:hover {
+            background-color: transparent;
+            outline: none;
+        }
+
+        input {
+
+            opacity: 1;
+            padding-inline-start: 2.1em;
+            pointer-events: auto;
+        }
+
+
+
+        .search-icon {
+            z-index: 1;
+            left: 5px;
+            color: var(--pt-gray);
+        }
+    }
 }

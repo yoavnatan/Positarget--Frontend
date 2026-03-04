@@ -30,13 +30,18 @@ export function EventIndex() {
     }, [categorie])
 
     useEffect(() => {
-        console.log(filterBy)
-        if (filterBy.labels.length > 0) {
-            const filteredEvents = events.filter(ev => filterBy.labels.some(label => ev.labels.includes(label)))
-            setEventsToShow(filteredEvents)
-        } else {
-            setEventsToShow(events)
+
+        let filteredEvents = events
+        if (filterBy.txt !== '') {
+            console.log(filterBy.txt)
+            filteredEvents = events.filter(ev => ev.title.toLowerCase().includes(filterBy.txt.toLowerCase()))
+            console.log(filteredEvents)
         }
+        if (filterBy.labels.length > 0) {
+            filteredEvents = filteredEvents.filter(ev => filterBy.labels.some(label => ev.labels.includes(label)))
+        }
+        setEventsToShow(filteredEvents)
+
     }, [filterBy, events])
 
     async function onRemoveEvent(eventId: string) {

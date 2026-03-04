@@ -135,7 +135,7 @@
     }
 }
 
-.search-container {
+.app-header .search-container {
     flex-grow: 1;
     position: relative;
 
@@ -434,7 +434,7 @@
 }
 
 @media (max-width: 940px) {
-    .search-container {
+    .app-header .search-container {
         display: none;
     }
 
