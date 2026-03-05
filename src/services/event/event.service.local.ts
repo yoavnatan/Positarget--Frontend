@@ -18,7 +18,7 @@ export const eventService = {
     getById,
     save,
     remove,
-    addEventMsg
+    addEventMsg,
 }
 window.cs = eventService
 
@@ -48,16 +48,28 @@ async function query(filterBy: FilterBy, categorie: string, page: number) {
     return events
 }
 async function getEventsByIds(eventIds: string[]): Promise<Event[]> {
-    // אנחנו יוצרים מערך של Promises לכל ID
-    const promises = eventIds.map(id =>
-        // שים לב: כאן אין ?closed=false! אנחנו רוצים את האמת, גם אם היא סגורה.
-        fetch(`/poly-api/event/${id}`).then(res => res.json())
-    );
+    if (!eventIds || eventIds.length === 0) return [];
 
-    const rawEvents = await Promise.all(promises);
-    // משתמשים בפונקציית הנירמול שכבר כתבת (processRawEvents)
-    return processRawEvents(rawEvents);
+    try {
+        const promises = eventIds.map(id =>
+            fetch(`/poly-api/event/${id}`)
+                .then(res => res.ok ? res.json() : null)
+                .catch(() => null)
+        );
+
+        const rawEvents = await Promise.all(promises);
+
+        // סינון תוצאות ריקות (במקרה ש-ID לא נמצא)
+        const validRawEvents = rawEvents.filter(ev => ev !== null);
+
+        // שימוש בפונקציית הנירמול שלך כדי להפוך אותם לטיפוס Event
+        return processRawEvents(validRawEvents);
+    } catch (err) {
+        console.error("Failed to fetch events by IDs:", err);
+        return [];
+    }
 }
+
 
 function getById(eventId: string): Promise<Event> {
     return storageService.get(STORAGE_KEY, eventId)
@@ -323,4 +335,39 @@ export async function fetchEvents(categoryName?: string, page: number = 0): Prom
 
     const sorted = accumulatedEvents.sort((a, b) => b.volume - a.volume);
     return sorted.slice(0, limit);
+}
+
+// search:
+export async function searchEvents(searchTerm: string, limit: number = 200): Promise<Event[]> {
+    if (!searchTerm) return []
+
+    const url = `/poly-search?q=${encodeURIComponent(searchTerm)}&optimized=false&limit_per_type=${limit}&search_tags=true`
+
+    try {
+        const res = await fetch(url)
+        if (!res.ok) throw new Error('Search failed')
+
+        const data = await res.json()
+        const rawResults = data.events || []
+
+        const fixedResults = rawResults.map((ev: any) => {
+            const safeId = ev.id || ev.eventId || ev._id
+
+            return {
+                ...ev,
+                id: safeId,
+                tags: Array.isArray(ev.tags)
+                    ? ev.tags.map((t: any) => typeof t === 'string' ? { label: t } : t)
+                    : []
+            }
+        })
+
+        const processed = processRawEvents(fixedResults)
+
+        return processed.sort((a, b) => (b.volume || 0) - (a.volume || 0))
+
+    } catch (err) {
+        console.error("Search failed:", err)
+        return []
+    }
 }

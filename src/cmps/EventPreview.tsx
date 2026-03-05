@@ -2,12 +2,18 @@ import { Link } from 'react-router-dom'
 import { Event, Market } from '../types/event'
 import PieChartWithPaddingAngle from './pieChart'
 import { IoBookmark, IoBookmarkOutline } from "react-icons/io5";
+import { useAppDispatch, useAppSelector } from '../store/store';
+import { userService } from '../services/user';
+import { setMsg } from '../store/slices/system.slice';
+import { updateUser } from '../store/slices/user.slice';
 
 export function EventPreview({ event }: { event: Event }) {
+    const dispatch = useAppDispatch()
+
     const mainMarket = event.markets?.[0]
     const isBinary = mainMarket?.outcomes.includes('Yes') || mainMarket?.outcomes.includes('Up')
     const isSingleMarket = event.markets.length === 1 && mainMarket
-
+    const { user } = useAppSelector(state => state.userModule)
     // פונקציית עזר לבדיקה אם מדובר בספורט לפי ה-Outcome הראשון
     const isSportMarket = (market: Market) => {
         const text = market.outcomes[0]?.toLowerCase()
@@ -45,6 +51,26 @@ export function EventPreview({ event }: { event: Event }) {
         return 'sport'
     }
 
+    async function saveToFavorites(ev: React.MouseEvent, eventId: string) {
+        ev.stopPropagation()
+        if (!user) dispatch(setMsg({ txt: 'Please login, to save this market', type: 'error' }))
+        if (user) {
+            const isFavorite = user.favoriteEvents?.includes(eventId);
+            const updatedFavoriteEvents = isFavorite
+                ? user.favoriteEvents!.filter(id => id !== eventId) // הסרה
+                : [...(user.favoriteEvents || []), eventId];     // הוספה 
+
+
+            const updatedUser = { ...user, favoriteEvents: updatedFavoriteEvents };
+            try {
+                await dispatch(updateUser(updatedUser)).unwrap();
+            } catch (err) {
+                dispatch(setMsg({ txt: 'Failed to save to favorites', type: 'error' }))
+            }
+        }
+    }
+
+
     // החלטה כמה מרקטים להציג: אם הראשון הוא ספורט, נציג רק 1. אחרת (פוליטיקה/קריפטו) נציג עד 5.
     const displayedMarkets = (mainMarket && isSportMarket(mainMarket))
         ? event.markets.slice(0, 1)
@@ -80,7 +106,7 @@ export function EventPreview({ event }: { event: Event }) {
                         {displayedMarkets.map((market) => (
                             <div key={market.id} className="option flex space-between">
                                 <span className="option-name">{getUniqueName(market, event.markets)}</span>
-                                <div className="market-btns flex items-center gap-10">
+                                <div className="market-btns flex">
                                     {market.outcomes.slice(0, 2).map((outcome, idx) => {
                                         const btnCls = getBtnClass(outcome)
                                         return (
@@ -122,7 +148,12 @@ export function EventPreview({ event }: { event: Event }) {
                         <span className="label">Vol.</span>
                         <span className="value"> ${(event.volume || 0).toLocaleString()}</span>
                     </div>
-                    <span className="category-tag"><IoBookmarkOutline /></span>
+                    {(!user?.favoriteEvents || !user?.favoriteEvents.includes(event._id)) && <span className="category-tag"
+                        onClick={(ev) => saveToFavorites(ev, event._id)}
+                    ><IoBookmarkOutline /></span>}
+                    {user?.favoriteEvents && user?.favoriteEvents.includes(event._id) && <span className="category-tag"
+                        onClick={(ev) => saveToFavorites(ev, event._id)}
+                    ><IoBookmark className="icon full" /></span>}
                 </div>
             </footer>
         </article>

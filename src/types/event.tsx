@@ -24,6 +24,7 @@ export interface Event { // זה ה"כרטיס" (Card) שלך
 export type FilterBy = {
     txt: string
     labels: string[]
+    favoritesOnly: boolean
     status?: 'open' | 'closed' | 'all'
     sortField: string
     sortDir: 1 | -1

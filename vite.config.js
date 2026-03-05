@@ -16,12 +16,21 @@ export default defineConfig({
 	// }
 	server: {
 		proxy: {
-			// כל בקשה שתתחיל ב- /poly-api תופנה לפולימרקט
+			'/poly-search': {
+				target: 'https://gamma-api.polymarket.com',
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/poly-search/, '/public-search'),
+				configure: (proxy, _options) => {
+					proxy.on('error', (err, _req, _res) => {
+						console.log('proxy error', err);
+					});
+				},
+			},
 			'/poly-api': {
 				target: 'https://gamma-api.polymarket.com',
 				changeOrigin: true,
-				rewrite: (path) => path.replace(/^\/poly-api/, ''),
-			},
-		},
-	},
+				rewrite: (path) => path.replace(/^\/poly-api/, '')
+			}
+		}
+	}
 })

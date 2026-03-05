@@ -18,6 +18,7 @@ import { setIsAuthShown, setIsModalShown } from './store/slices/system.slice'
 import { Modal } from './cmps/Modal'
 
 import { motion, AnimatePresence } from 'framer-motion'
+import { Search } from './pages/Search'
 
 export function RootCmp() {
     const { isAuthShown, isModalShown } = useAppSelector((state) => state.systemModule)
@@ -59,6 +60,7 @@ export function RootCmp() {
                 <Routes>
                     <Route path="/" element={<EventIndex />} />
                     <Route path="/:categorie" element={<EventIndex />} />
+                    <Route path="search" element={<Search />} />
                     <Route path="about" element={<AboutUs />} />
                     <Route path="event/:eventId" element={<EventDetails />} />
                     <Route path="user/:id" element={<UserDetails />} />

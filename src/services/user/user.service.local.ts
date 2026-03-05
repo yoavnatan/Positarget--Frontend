@@ -35,14 +35,14 @@ function remove(userId: string) {
 
 async function update(user: User) {
     if (!user._id) throw new Error('User ID is required')
-    const userToUpdate: User = await storageService.get('user', user._id)
-    await storageService.put('user', user)
+    const updatedUser = await storageService.put('user', user)
 
     // When admin updates other user's details, do not update loggedinUser
     const loggedinUser = getLoggedinUser()
-    if (loggedinUser._id === userToUpdate._id) saveLoggedinUser(userToUpdate)
-
-    return userToUpdate
+    if (loggedinUser && loggedinUser._id === updatedUser._id) {
+        saveLoggedinUser(updatedUser)
+    }
+    return updatedUser
 }
 
 async function login(userCred: UserCred) {
@@ -82,17 +82,11 @@ function getLoggedinUser() {
 }
 
 function saveLoggedinUser(user: User) {
-    user = {
-        _id: user._id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        username: user.username,
-        imgUrl: user.imgUrl,
-        isAdmin: user.isAdmin
-    }
-    sessionStorage.setItem(STORAGE_KEY_LOGGEDIN_USER, JSON.stringify(user))
-    return user
+
+    const { password, ...userToSave } = user;
+
+    sessionStorage.setItem(STORAGE_KEY_LOGGEDIN_USER, JSON.stringify(userToSave));
+    return userToSave;
 }
 
 // To quickly create an admin user, uncomment the next line

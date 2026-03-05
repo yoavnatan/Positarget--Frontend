@@ -10,6 +10,7 @@ export interface User {
 
     cash?: number          // יתרת מזומן
     portfolio?: Position[] // החזקות לפי מרקט
+    favoriteEvents?: string[] // רשימת אירועים מועדפים
 }
 
 export interface UserCred {
@@ -20,7 +21,7 @@ export interface UserCred {
 
 export type Position = {
     eventId: string
-    outcome: 'YES' | 'NO'
+    outcome: string
     shares: number
     avgPrice: number
 }

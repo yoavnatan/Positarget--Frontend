@@ -1,4 +1,4 @@
-import { Link, NavLink } from 'react-router-dom'
+import { Link, NavLink, useSearchParams } from 'react-router-dom'
 import { useNavigate } from 'react-router'
 import { useAppDispatch, useAppSelector } from '../store/store'
 import { fetchUserDetails, logout, updateUserCash } from '../store/slices/user.slice'
@@ -19,6 +19,7 @@ import { useForm } from '../customHooks/useForm'
 import { convertToUsdc } from '../services/currencyAPI'
 import * as Select from '@radix-ui/react-select';
 import { ChevronDownIcon } from '@radix-ui/react-icons';
+import { searchEvents } from '../services/event/event.service.local'
 
 export function AppHeader() {
 	const carouselRef = useRef<HTMLDivElement>(null)
@@ -33,6 +34,9 @@ export function AppHeader() {
 	const [isNotificationsMenuOpen, setIsNotificationsMenuOpen] = useState(false)
 	const [isSearchOpen, setIsSearchOpen] = useState(false)
 	const [convertedAmount, setConvertedAmount] = useState<number | null>(0)
+	const [serachTerm, setSearchTerm] = useState('')
+	const [searchParams] = useSearchParams();
+
 	const timeoutRef = useRef<number | null>(null);
 	const dropdownRef = useRef<HTMLDivElement>(null);
 	const buttonRef = useRef<HTMLDivElement>(null);
@@ -126,7 +130,25 @@ export function AppHeader() {
 		if (converted >= 0) setConvertedAmount(converted)
 	}
 
+	function hadnleSearchInput(value: string) {
+		setSearchTerm(value)
 
+	}
+
+	async function onSearch() {
+		const newSearchParams = new URLSearchParams(searchParams);
+		newSearchParams.set('q', serachTerm);
+		setIsSearchOpen(false)
+		setSearchTerm('')
+		navigate('/search/?' + newSearchParams.toString())
+	}
+
+	function onTopicClicked(ev: React.MouseEvent) {
+		ev.stopPropagation()
+		const topic = (ev.target as HTMLDivElement).innerText
+		setIsSearchOpen(false)
+		navigate(`/${topic}`)
+	}
 
 	return (
 		<>
@@ -190,27 +212,32 @@ export function AppHeader() {
 				<NavLink to="event">Events</NavLink> */}
 
 						<div className="search-container wide-screen" ref={searchRef} onClick={() => setIsSearchOpen(true)}>
-							<input type="text" placeholder="Search" />
-							<Search className="icon search medium" />
-							<div className={`search-modal ${isSearchOpen ? 'open' : ''}`}>
-								<header>Browse</header>
-								<div className="browse-container">
-									<div className="browse-item"><New /> New</div>
-									<div className="browse-item"><Trending /> Trending</div>
-									<div className="browse-item"><Popular /> Popular</div>
+							<form onSubmit={(ev) => {
+								ev.preventDefault()
+								onSearch()
+							}}>
+								<input type="text" placeholder="Search" value={serachTerm} onChange={(ev) => hadnleSearchInput(ev.target.value)} />
+								<Search className="icon search medium" />
+								<div className={`search-modal ${isSearchOpen ? 'open' : ''}`}>
+									<header>Browse</header>
+									<div className="browse-container">
+										<div className="browse-item"><New /> New</div>
+										<div className="browse-item"><Trending /> Trending</div>
+										<div className="browse-item"><Popular /> Popular</div>
+									</div>
+									<header>Topics</header>
+									<div className="topics-container">
+										<div className="topic-item" onClick={(ev) => onTopicClicked(ev)}>Politics</div>
+										<div className="topic-item" onClick={(ev) => onTopicClicked(ev)} >Sports</div>
+										<div className="topic-item" onClick={(ev) => onTopicClicked(ev)}>Crypto</div>
+										<div className="topic-item" onClick={(ev) => onTopicClicked(ev)}>Finance</div>
+										<div className="topic-item" onClick={(ev) => onTopicClicked(ev)}>Climate</div>
+										<div className="topic-item" onClick={(ev) => onTopicClicked(ev)}>Tech</div>
+										<div className="topic-item" onClick={(ev) => onTopicClicked(ev)}>Economy</div>
+										<div className="topic-item" onClick={(ev) => onTopicClicked(ev)}>Culture</div>
+									</div>
 								</div>
-								<header>Topics</header>
-								<div className="topics-container">
-									<div className="topic-item">Topic</div>
-									<div className="topic-item">Topic</div>
-									<div className="topic-item">Topic</div>
-									<div className="topic-item">Topic</div>
-									<div className="topic-item">Topic</div>
-									<div className="topic-item">Topic</div>
-									<div className="topic-item">Topic</div>
-									<div className="topic-item">Topic</div>
-								</div>
-							</div>
+							</form>
 						</div>
 						{user?.isAdmin && <NavLink to="/admin">Admin</NavLink>}
 

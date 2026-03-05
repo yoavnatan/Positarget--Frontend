@@ -19,6 +19,7 @@ export function EventIndex() {
     const [autoLoadCount, setAutoLoadCount] = useState(0)
     const { events, isLoading, hasMore } = useAppSelector(state => state.eventModule)
     const { categorie } = useParams() as { categorie: string }
+    const { user } = useAppSelector(state => state.userModule)
     const [eventsToShow, setEventsToShow] = useState<Event[]>([])
 
     useEffect(() => {
@@ -39,6 +40,9 @@ export function EventIndex() {
         }
         if (filterBy.labels.length > 0) {
             filteredEvents = filteredEvents.filter(ev => filterBy.labels.some(label => ev.labels.includes(label)))
+        }
+        if (filterBy.favoritesOnly) {
+            filteredEvents = filteredEvents.filter(ev => user?.favoriteEvents?.includes(ev._id))
         }
         setEventsToShow(filteredEvents)
 
@@ -82,7 +86,7 @@ export function EventIndex() {
     }
     const observer = useRef<IntersectionObserver | null>(null)
 
-    // 2. פונקציה שמזהה את האלמנט האחרון ברשימה
+    // פונקציה שמזהה את האלמנט האחרון ברשימה
     const lastEventElementRef = useCallback((node: HTMLDivElement) => {
         if (isLoading || !isAutoLoad || !hasMore) return
         if (observer.current) observer.current.disconnect()
@@ -125,7 +129,7 @@ export function EventIndex() {
                     <p className="end-of-results">No more markets to show</p>
                 )}
 
-                {hasMore && !isAutoLoad && !isLoading && (
+                {hasMore && !isAutoLoad && !isLoading && !filterBy.favoritesOnly && (
                     <button className="btn-pagination" onClick={onLoadMore}>
                         Show more markets
                     </button>

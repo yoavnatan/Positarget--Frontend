@@ -33,6 +33,7 @@ function getDefaultFilter(): FilterBy {
     return {
         txt: '',
         labels: [],
+        favoritesOnly: false,
         sortField: '',
         sortDir: 1,
     }

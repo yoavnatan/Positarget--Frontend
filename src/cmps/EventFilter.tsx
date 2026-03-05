@@ -86,6 +86,10 @@ export function EventFilter({ filterBy, setFilterBy }: { filterBy: FilterBy, set
         }
     }, [labels])
 
+    function onToggleShowFavorites() {
+        setFilterToEdit(prev => ({ ...prev, favoritesOnly: !prev.favoritesOnly }))
+    }
+
 
     return (
         <section className="event-filter">
@@ -161,11 +165,9 @@ export function EventFilter({ filterBy, setFilterBy }: { filterBy: FilterBy, set
                         <input onClick={(ev) => ev.stopPropagation()} ref={searchRef} type="text" name="txt" placeholder="Search..." autoFocus
                             value={filterToEdit.txt} onChange={handleChange} />
                     </div>
-                    <div className="icon-wrapper">
-                        <IoBookmarkOutline />
+                    <div className="icon-wrapper" onClick={onToggleShowFavorites}>
+                        {!filterBy.favoritesOnly ? <IoBookmarkOutline /> : <IoBookmark className="icon full" />}
                     </div>
-
-                    {/* <IoBookmark /> */}
 
                 </div>
 

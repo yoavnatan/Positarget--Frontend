@@ -12,6 +12,7 @@ interface UserState {
     watchedUser: User | null
     count: number
     isLoading: boolean // לטעינת רשימת משתמשים או פרופיל
+    lastUser: User | null
 }
 
 const initialState: UserState = {
@@ -19,7 +20,8 @@ const initialState: UserState = {
     users: [],
     watchedUser: null,
     count: 10,
-    isLoading: false
+    isLoading: false,
+    lastUser: null
 }
 
 // --- Async Thunks ---
@@ -51,6 +53,11 @@ export const removeUser = createAsyncThunk('user/removeUser', async (userId: str
     return userId
 })
 
+export const updateUser = createAsyncThunk('user/updateUser', async (user: User) => {
+    const updatedUser = await userService.update(user)
+    return updatedUser
+})
+
 // --Financial actions --
 
 export const fetchUserDetails = createAsyncThunk(
@@ -76,6 +83,22 @@ export const updateUserCash = createAsyncThunk(
         userService.saveLoggedinUser(savedUser)
 
         return savedUser.cash
+    }
+)
+
+export const toggleFavorite = createAsyncThunk(
+    'user/toggleFavorite',
+    async (eventId: string, { getState }) => {
+        const { user } = (getState() as RootState).userModule
+        if (!user) throw new Error('Not logged in')
+
+        const isFavorite = user.favoriteEvents?.includes(eventId)
+        const updatedFavorites = isFavorite
+            ? user.favoriteEvents?.filter(id => id !== eventId)
+            : [...(user.favoriteEvents || []), eventId]
+
+        const updatedUser = { ...user, favoriteEvents: updatedFavorites }
+        return await userService.update(updatedUser)
     }
 )
 // --- Slice ---
@@ -134,7 +157,35 @@ const userSlice = createSlice({
                     state.user = { ...state.user, cash: action.payload }
                 }
             })
+            .addCase(updateUser.pending, (state, action) => {
+                if (state.user && state.user._id) {
+                    state.lastUser = { ...state.user }
+                }
+                const updatedUserData = action.meta.arg
+                if (state.user && state.user._id === updatedUserData._id) {
+                    state.user = { ...state.user, ...updatedUserData }
+                }
+
+                state.users = state.users.map(u =>
+                    u._id === updatedUserData._id ? { ...u, ...updatedUserData } : u
+                )
+
+            })
+            .addCase(updateUser.fulfilled, (state, action) => {
+                if (state.user && state.user._id === action.payload._id) {
+                    state.user = action.payload
+                }
+                state.users = state.users.map(u => u._id === action.payload._id ? action.payload : u)
+                state.lastUser = null
+            })
+            .addCase(updateUser.rejected, (state) => {
+                if (state.lastUser) {
+                    state.user = state.lastUser
+                }
+                state.lastUser = null
+            })
     },
+
 })
 
 export const { increment, decrement, changeCount, setScore } = userSlice.actions

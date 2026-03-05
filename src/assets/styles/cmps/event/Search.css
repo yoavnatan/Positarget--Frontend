@@ -1,0 +1,175 @@
+.search-page {
+    margin-top: 1em;
+    display: flex;
+    gap: 2em;
+
+    .header {
+        margin-inline-start: .8em;
+        font-family: izmir;
+        color: var(--pt-gray);
+
+        span {
+            color: var(--pt-black)
+        }
+    }
+}
+
+.search-results {
+    min-width: 50vw;
+
+    p {
+        font-family: izmir;
+        color: var(--pt-gray);
+        text-align: center;
+        margin: 5em auto;
+    }
+}
+
+.search-results-list {
+
+    display: grid;
+    position: relative;
+
+    .event-info {
+
+        gap: 1em;
+
+        img {
+            width: 56px;
+            height: 56px;
+            object-fit: cover;
+            border-radius: 7.2px;
+        }
+    }
+
+
+
+
+}
+
+.search-result-item {
+    position: relative;
+    padding: .8em;
+    border-radius: 7.2px;
+
+    &:hover {
+        background-color: var(--input-gray);
+    }
+
+    .event-title {
+        margin-bottom: .5em;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+
+    .event-labels {
+        font-family: izmir;
+        color: var(--pt-gray);
+        font-size: .8em;
+        margin-bottom: .5em;
+        display: flex;
+        gap: 1em;
+    }
+
+    .event-label:first-child {
+        position: relative;
+    }
+
+    .event-label:first-child::after {
+        position: absolute;
+        content: "•";
+        margin-left: .35em;
+    }
+
+    .volume {
+        font-family: izmir;
+        color: var(--pt-gray);
+        font-size: .8em;
+    }
+
+    .inner-info {
+        flex: 1;
+    }
+
+    .odds {
+        text-align: right;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+
+        .price {
+            font-family: izmir;
+            font-size: 1.2em;
+        }
+
+        .outcome {
+            font-family: izmir;
+            color: var(--pt-gray);
+            font-size: 1em;
+        }
+    }
+
+    .icon.arrow {
+        rotate: 270deg;
+        align-self: center;
+    }
+}
+
+.search-result-item::after {
+    content: "";
+    position: absolute;
+    left: 20px;
+    bottom: -1px;
+    width: 97%;
+    height: 1px;
+    background-color: var(--border-gray);
+}
+
+.search-sticky-menu {
+    position: sticky;
+    width: 350px;
+    height: 280px;
+    top: 150px;
+    background-color: var(--pt-white);
+    border: 1px solid var(--border-gray);
+    border-radius: 7.2px;
+    box-shadow: 0px 2px 5px -1px rgba(0, 0, 0, 0.05);
+    margin-inline-start: auto;
+
+    @media (max-width: 650px) {
+        display: none;
+    }
+}
+
+.search-form {
+    position: relative;
+    width: 100%;
+
+    input {
+        padding-inline-start: 2.5em;
+        width: 100%;
+        height: 50px;
+        border: none;
+        border-bottom: 1px solid var(--border-gray);
+        border-top-left-radius: 7.2px;
+        border-top-right-radius: 7.2px;
+
+
+    }
+
+    input:focus {
+        outline: none;
+
+    }
+
+    .icon.search {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+
+}

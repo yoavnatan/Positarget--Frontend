@@ -53,4 +53,8 @@ object {
 
 .icon {
     color: var(--pt-gray);
+
+    &.full {
+        fill: var(--button-blue-hover)
+    }
 }

@@ -80,6 +80,8 @@ ul.filter-carusel {
 
     >* {
         height: 35px;
+
+
     }
 
     >*:hover {
@@ -92,6 +94,7 @@ ul.filter-carusel {
             color: var(--pt-black2);
             background-color: var(--border-gray);
         }
+
     }
 }
 
@@ -107,7 +110,16 @@ ul.filter-carusel {
         color: var(--pt-black2);
         background-color: var(--border-gray);
     }
+
+
+
 }
+
+.icon-wrapper:has(.full) {
+    background-color: var(--border-gray);
+}
+
+
 
 .filter-icons .search-container {
     display: flex;
