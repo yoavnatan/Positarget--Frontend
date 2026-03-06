@@ -4,6 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Event } from "../types/event";
 import Arrow from '../assets/svg/drop-arrow.svg?react'
 import SearchIcon from '../assets/svg/search.svg?react'
+import New from '../assets/svg/new.svg?react'
+import Popular from '../assets/svg/fire.svg?react'
+import Trending from '../assets/svg/trending.svg?react'
 
 export function Search() {
     const [searchParams] = useSearchParams();
@@ -11,7 +14,8 @@ export function Search() {
     const [serachTerm, setSearchTerm] = useState('')
     const [visibleCount, setVisibleCount] = useState(15);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
-
+    const [filterBy, setFilterBy] = useState<string>()
+    const [originalResults, setOriginalResults] = useState<Event[]>([]);
     const navigate = useNavigate();
     const query = searchParams.get('q');
     const observer = useRef<IntersectionObserver | null>(null);
@@ -27,14 +31,40 @@ export function Search() {
                 if (query) {
                     const results = await searchEvents(query);
                     setSearchResults(results);
+                    setOriginalResults(results);
                 }
             } catch (err) {
                 console.error('Search failed', err);
             }
+
         }
 
         fetchResults();
     }, [query]);
+
+    useEffect(() => {
+        const sortFromUrl = searchParams.get('sort');
+        if (sortFromUrl) {
+            setFilterBy(sortFromUrl);
+        } else {
+            console.log('hi')
+
+            setFilterBy(''); // ברירת מחדל אם אין ב-URL
+            setSearchResults(originalResults); // החזרת התוצאות למצב המקורי
+        }
+    }, [searchParams]);
+
+    useEffect(() => {
+        console.log('Filtering by:', filterBy);
+        if (filterBy === "Volume") {
+            setSearchResults(prev => [...prev].sort((a, b) => b.volume - a.volume));
+        } else if (filterBy === "Newest") {
+            setSearchResults(prev => [...prev].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+        } else if (filterBy === "Trending") {
+            setSearchResults(prev => [...prev].sort((a, b) => b.volume / ((Date.now() - new Date(b.createdAt).getTime()) / (1000 * 60 * 60)) - a.volume / ((Date.now() - new Date(a.createdAt).getTime()) / (1000 * 60 * 60))));
+        }
+    }, [filterBy])
+
 
     const loadMore = useCallback(() => {
         if (isLoadingMore || visibleCount >= searchResults.length) return;
@@ -81,6 +111,21 @@ export function Search() {
             return { price: market.outcomePrices[0], outcome: '' }
         }
     }
+
+    function onSortBy(ev: React.MouseEvent<HTMLDivElement>) {
+        const text = ev.currentTarget.textContent?.trim() || '';
+        const newParams = new URLSearchParams(searchParams);
+
+        if (filterBy === text) {
+            newParams.delete('sort');
+        } else {
+            newParams.set('sort', text);
+        }
+
+        navigate(`/search?${newParams.toString()}`);
+    }
+
+    console.log(searchResults)
 
     return (
         <section className="search-page">
@@ -142,6 +187,12 @@ export function Search() {
                     />
                     <SearchIcon className="icon search medium" />
                 </form>
+                <h5 className="sort-by header">Sort by</h5>
+                <div className="sorting-options flex">
+                    <div className={`sort-item flex ${filterBy === 'Trending' ? "active" : ''}`} onClick={onSortBy}><Trending />Trending</div>
+                    <div className={`sort-item flex ${filterBy === 'Newest' ? "active" : ''}`} onClick={onSortBy}><New />Newest</div>
+                    <div className={`sort-item flex ${filterBy === 'Volume' ? "active" : ''}`} onClick={onSortBy}><Popular />Volume</div>
+                </div>
             </div>
         </section>
     );

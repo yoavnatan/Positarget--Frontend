@@ -12,6 +12,7 @@ export interface Event { // זה ה"כרטיס" (Card) שלך
     _id: string;             // ה-Event ID
     title: string;           // הכותרת של האירוע
     description: string;
+    createdAt: Date | number;
     imgUrl: string;
     endDate: Date | number;
     status: 'open' | 'closed';

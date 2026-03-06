@@ -229,7 +229,7 @@ function processRawEvents(combined: any[]): Event[] {
     const uniqueMap = new Map<string, any>();
     combined.forEach(ev => {
         if (ev?.id) uniqueMap.set(ev.id, ev);
-    }); // מחיקת כפילויות על ידי שימוש במפה עם מזהה האירוע כמפתח
+    });
 
     const uniqueRawEvents = Array.from(uniqueMap.values());
 
@@ -238,10 +238,9 @@ function processRawEvents(combined: any[]): Event[] {
             let outcomes = typeof m.outcomes === 'string' ? JSON.parse(m.outcomes) : m.outcomes;
             let rawPrices = typeof m.outcomePrices === 'string' ? JSON.parse(m.outcomePrices) : m.outcomePrices;
 
-
             const outcomesList = Array.isArray(outcomes) ? outcomes : ["Yes", "No"];
             const prices = Array.isArray(rawPrices)
-                ? rawPrices.map(p => Math.round(parseFloat(p) * 100))
+                ? rawPrices.map((p: any) => Math.round(parseFloat(p) * 100))
                 : outcomesList.map(() => 50);
 
             return {
@@ -251,7 +250,7 @@ function processRawEvents(combined: any[]): Event[] {
                 outcomePrices: prices,
                 clobTokenIds: m.clobTokenIds || [],
             };
-        }); // נירמול שווקים
+        });
 
         if (markets.length === 0) {
             markets.push({
@@ -267,23 +266,26 @@ function processRawEvents(combined: any[]): Event[] {
             eventTags.some(tag => tag.toLowerCase() === c.toLowerCase())
         ) || eventTags[0] || 'General';
 
+        // --- הוספת הלוגיקה עבור createdAt ו-endDate ---
+        const createdAt = ev.createdAt ? new Date(ev.createdAt).getTime() : Date.now();
+        const endDate = ev.endDate ? new Date(ev.endDate).getTime() : Date.now() + 86400000; // ברירת מחדל מחר
+
         return {
             _id: ev.id,
-            title: ev.title || ev.question,
+            title: ev.title || ev.question || "Untitled Event",
             description: ev.description || "",
-            imgUrl: ev.image || "https://polymarket.com/images/default.png",
+            createdAt: createdAt, // עומד בחוזה של ה-Interface
+            imgUrl: ev.image || ev.imgUrl || "https://polymarket.com/images/default.png",
+            endDate: endDate,
             status: ev.closed ? 'closed' : 'open',
-            endDate: ev.endDate,
             category: primaryCat,
             labels: Array.from(new Set([primaryCat, ...eventTags])),
             markets: markets,
             volume: Math.floor(ev.volume || 0),
             msgs: [],
-            createdAt: ev.createdAt ? new Date(ev.createdAt).getTime() : Date.now()
         } as Event;
-    })
+    });
 }
-
 export async function fetchEvents(categoryName?: string, page: number = 0): Promise<Event[]> {
     let accumulatedEvents: Event[] = [];
     const limit = 30;
@@ -364,7 +366,7 @@ export async function searchEvents(searchTerm: string, limit: number = 200): Pro
 
         const processed = processRawEvents(fixedResults)
 
-        return processed.sort((a, b) => (b.volume || 0) - (a.volume || 0))
+        return processed
 
     } catch (err) {
         console.error("Search failed:", err)
