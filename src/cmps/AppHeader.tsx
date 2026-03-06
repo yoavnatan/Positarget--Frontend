@@ -150,6 +150,12 @@ export function AppHeader() {
 		navigate(`/${topic}`)
 	}
 
+	function onBrowse(ev: React.MouseEvent, sortBy?: string) {
+		ev.stopPropagation()
+		setIsSearchOpen(false)
+		navigate(`/search?q=&sort=${sortBy}`)
+	}
+
 	return (
 		<>
 			<AnimatePresence>
@@ -216,14 +222,14 @@ export function AppHeader() {
 								ev.preventDefault()
 								onSearch()
 							}}>
-								<input type="text" placeholder="Search" value={serachTerm} onChange={(ev) => hadnleSearchInput(ev.target.value)} />
+								<input type="text" placeholder="Search" value={serachTerm} onChange={(ev) => hadnleSearchInput(ev.target.value)} className={`${isSearchOpen ? 'open' : ''}`} />
 								<Search className="icon search medium" />
 								<div className={`search-modal ${isSearchOpen ? 'open' : ''}`}>
 									<header>Browse</header>
 									<div className="browse-container">
-										<div className="browse-item"><New /> New</div>
-										<div className="browse-item"><Trending /> Trending</div>
-										<div className="browse-item"><Popular /> Popular</div>
+										<div className="browse-item" onClick={(ev) => onBrowse(ev, 'Newest')}><New /> New</div>
+										<div className="browse-item" onClick={(ev) => onBrowse(ev, 'Trending')}><Trending /> Trending</div>
+										<div className="browse-item" onClick={(ev) => onBrowse(ev, 'Volume')} ><Popular /> Popular</div>
 									</div>
 									<header>Topics</header>
 									<div className="topics-container">

@@ -16,6 +16,7 @@
 
 .search-results {
     min-width: 50vw;
+    flex: 2.5;
 
     p {
         font-family: izmir;
@@ -129,6 +130,7 @@
 
 .search-sticky-menu {
     position: sticky;
+    flex: 1;
     width: 350px;
     height: max-content;
     top: 150px;
@@ -161,7 +163,6 @@
 
     input:focus {
         outline: none;
-
     }
 
     .icon.search {

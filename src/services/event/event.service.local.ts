@@ -19,6 +19,7 @@ export const eventService = {
     save,
     remove,
     addEventMsg,
+    searchEvents,
 }
 window.cs = eventService
 

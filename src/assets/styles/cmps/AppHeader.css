@@ -150,7 +150,8 @@
         letter-spacing: .3px;
     }
 
-    input:focus {
+    input:focus,
+    input.open {
         outline: 1px solid var(--border-gray);
         border-bottom-left-radius: 0;
         border-bottom-right-radius: 0;

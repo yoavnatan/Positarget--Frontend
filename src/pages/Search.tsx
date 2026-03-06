@@ -1,5 +1,5 @@
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
-import { searchEvents } from "../services/event/event.service.local";
+import { eventService } from '../services/event'
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Event } from "../types/event";
 import Arrow from '../assets/svg/drop-arrow.svg?react'
@@ -7,6 +7,9 @@ import SearchIcon from '../assets/svg/search.svg?react'
 import New from '../assets/svg/new.svg?react'
 import Popular from '../assets/svg/fire.svg?react'
 import Trending from '../assets/svg/trending.svg?react'
+import { useAppDispatch, useAppSelector } from "../store/store";
+import { loadEvents } from "../store/slices/event.slice";
+import { searchEvents } from "../services/event/event.service.local";
 
 export function Search() {
     const [searchParams] = useSearchParams();
@@ -14,14 +17,22 @@ export function Search() {
     const [serachTerm, setSearchTerm] = useState('')
     const [visibleCount, setVisibleCount] = useState(15);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
-    const [filterBy, setFilterBy] = useState<string>()
+    const [sortBy, setSortBy] = useState<string>()
     const [originalResults, setOriginalResults] = useState<Event[]>([]);
+    const { events } = useAppSelector(state => state.eventModule)
     const navigate = useNavigate();
     const query = searchParams.get('q');
     const observer = useRef<IntersectionObserver | null>(null);
+    const dispatch = useAppDispatch()
 
     useEffect(() => {
-        if (!query) return;
+        if (!query || query === '') {
+            const filter = eventService.getDefaultFilter()
+            dispatch(loadEvents({ filterBy: filter, categorie: '', page: 0 }))
+            setVisibleCount(15);
+            setSearchTerm('');
+            return
+        };
 
         setSearchTerm(query);
         setVisibleCount(15);
@@ -36,34 +47,38 @@ export function Search() {
             } catch (err) {
                 console.error('Search failed', err);
             }
-
         }
-
         fetchResults();
-    }, [query]);
+    }, [query, dispatch]);
+
+    useEffect(() => {
+        // רק אם אין שאילתת חיפוש, אנחנו רוצים להשתמש בתוצאות הכלליות מה-Redux
+        if (!query || query === '') {
+            setSearchResults(events);
+            setOriginalResults(events);
+        }
+    }, [events]);
 
     useEffect(() => {
         const sortFromUrl = searchParams.get('sort');
         if (sortFromUrl) {
-            setFilterBy(sortFromUrl);
+            setSortBy(sortFromUrl);
         } else {
-            console.log('hi')
-
-            setFilterBy(''); // ברירת מחדל אם אין ב-URL
+            setSortBy(''); // ברירת מחדל אם אין ב-URL
             setSearchResults(originalResults); // החזרת התוצאות למצב המקורי
         }
     }, [searchParams]);
 
     useEffect(() => {
-        console.log('Filtering by:', filterBy);
-        if (filterBy === "Volume") {
+        console.log('Filtering by:', sortBy);
+        if (sortBy === "Volume") {
             setSearchResults(prev => [...prev].sort((a, b) => b.volume - a.volume));
-        } else if (filterBy === "Newest") {
+        } else if (sortBy === "Newest") {
             setSearchResults(prev => [...prev].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-        } else if (filterBy === "Trending") {
+        } else if (sortBy === "Trending") {
             setSearchResults(prev => [...prev].sort((a, b) => b.volume / ((Date.now() - new Date(b.createdAt).getTime()) / (1000 * 60 * 60)) - a.volume / ((Date.now() - new Date(a.createdAt).getTime()) / (1000 * 60 * 60))));
         }
-    }, [filterBy])
+    }, [sortBy])
 
 
     const loadMore = useCallback(() => {
@@ -116,7 +131,7 @@ export function Search() {
         const text = ev.currentTarget.textContent?.trim() || '';
         const newParams = new URLSearchParams(searchParams);
 
-        if (filterBy === text) {
+        if (sortBy === text) {
             newParams.delete('sort');
         } else {
             newParams.set('sort', text);
@@ -130,8 +145,13 @@ export function Search() {
     return (
         <section className="search-page">
             <div className="search-results">
-                <h3 className="header">Search results for: <span>{query}</span></h3>
-
+                <h3 className="header">
+                    {query ? (
+                        <>Search results for: <span>{query}</span></>
+                    ) : (
+                        "Explore Positarget"
+                    )}
+                </h3>
                 {searchResults.length > 0 ? (
                     <>
                         <ul className="search-results-list">
@@ -189,9 +209,9 @@ export function Search() {
                 </form>
                 <h5 className="sort-by header">Sort by</h5>
                 <div className="sorting-options flex">
-                    <div className={`sort-item flex ${filterBy === 'Trending' ? "active" : ''}`} onClick={onSortBy}><Trending />Trending</div>
-                    <div className={`sort-item flex ${filterBy === 'Newest' ? "active" : ''}`} onClick={onSortBy}><New />Newest</div>
-                    <div className={`sort-item flex ${filterBy === 'Volume' ? "active" : ''}`} onClick={onSortBy}><Popular />Volume</div>
+                    <div className={`sort-item flex ${sortBy === 'Trending' ? "active" : ''}`} onClick={onSortBy}><Trending />Trending</div>
+                    <div className={`sort-item flex ${sortBy === 'Newest' ? "active" : ''}`} onClick={onSortBy}><New />Newest</div>
+                    <div className={`sort-item flex ${sortBy === 'Volume' ? "active" : ''}`} onClick={onSortBy}><Popular />Volume</div>
                 </div>
             </div>
         </section>
