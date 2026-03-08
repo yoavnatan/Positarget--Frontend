@@ -38,6 +38,14 @@
 
             img {
                 width: 45px;
+                flex-shrink: 0;
+            }
+
+        }
+
+        @media (max-width: 650px) {
+            .logo .inter-font-bold {
+                display: none;
             }
         }
 
@@ -131,6 +139,7 @@
             width: 2.6em;
             aspect-ratio: 1;
             border-radius: 50%;
+            flex-shrink: 0;
         }
     }
 }
