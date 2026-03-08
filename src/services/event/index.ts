@@ -24,7 +24,8 @@ function getEmptyEvent(): Event {
         volume: 0,
         imgUrl: '',
         msgs: [],
-        labels: []
+        labels: [],
+        createdAt: Date.now(),
     }
 }
 
@@ -34,7 +35,7 @@ function getDefaultFilter(): FilterBy {
         txt: '',
         labels: [],
         favoritesOnly: false,
-        sortField: '',
+        sortField: 'Trending',
         sortDir: 1,
     }
 }

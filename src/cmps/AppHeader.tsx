@@ -174,7 +174,7 @@ export function AppHeader() {
 						/>
 						<Select.Root
 							value={depositFields.currency || 'USD'}
-							onValueChange={(val) => handleDepositChange({ target: { name: 'currency', value: val } } as any)}
+							onValueChange={(val) => handleDepositChange({ target: { name: 'currency', value: val } } as React.ChangeEvent<HTMLInputElement>)}
 						>
 							<Select.Trigger className="currency-select radix-trigger">
 								<Select.Value />

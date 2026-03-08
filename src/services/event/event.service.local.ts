@@ -24,30 +24,25 @@ export const eventService = {
 window.cs = eventService
 
 
-async function query(filterBy: FilterBy, categorie: string, page: number) {
-    // var events: Event[] = await storageService.query(STORAGE_KEY)
-    var events: Event[] = await fetchEvents(categorie, page)
-    console.log(events)
-    const { txt, sortField, sortDir } = filterBy
+async function query(filterBy: FilterBy, category: string = 'all', page: number = 0) {
+    // שליפת המיון מהפילטר. אם הוא ריק, ברירת המחדל היא volume
+    const sortBy = filterBy.sortField || 'volume'
+    console.log(sortBy)
+    // שליחת ה-sortBy ל-fetchEvents
+    var events: Event[] = await fetchEvents(category, page, sortBy)
 
-    if (txt) {
+    // סינון טקסטואלי מקומי רק אם המשתמש הזין טקסט בחיפוש
+    if (filterBy.txt) {
         const regex = new RegExp(filterBy.txt, 'i')
-        events = events.filter(event => regex.test(event.title) || regex.test(event.description))
+        events = events.filter(event =>
+            regex.test(event.title) ||
+            (event.description && regex.test(event.description))
+        )
     }
-    // if (minSpeed) {
-    //     events = events.filter(event => event.speed >= minSpeed)
-    // }
-    // if (sortField === 'vendor') {
-    //     events.sort((event1, event2) =>
-    //         event1[sortField].localeCompare(event2[sortField]) * +sortDir)
-    // }
-    // if (sortField === 'speed') {
-    //     events.sort((event1, event2) =>
-    //         (event1[sortField] - event2[sortField]) * +sortDir)
-    // }
 
     return events
 }
+
 async function getEventsByIds(eventIds: string[]): Promise<Event[]> {
     if (!eventIds || eventIds.length === 0) return [];
 
@@ -287,59 +282,52 @@ function processRawEvents(combined: any[]): Event[] {
         } as Event;
     });
 }
-export async function fetchEvents(categoryName?: string, page: number = 0): Promise<Event[]> {
-    let accumulatedEvents: Event[] = [];
+export async function fetchEvents(categoryName?: string, page: number = 0, sortBy: string = 'volume'): Promise<Event[]> {
     const limit = 30;
-    let currentOffset = page * limit;
+    const currentOffset = page * limit;
 
-    const maxAttempts = (page === 0) ? 10 : 4;
-    let attempts = 0;
+    // אנחנו תמיד מבקשים volume מה-API כדי לקבל אירועים "משמעותיים" ולא לקבל 422
+    let url = `/poly-api/events?active=true&closed=false&limit=${limit}&offset=${currentOffset}&order=volume&ascending=false`;
 
-    let apiTag = categoryName;
-    if (categoryName?.toLowerCase() === 'climate-science') apiTag = 'Climate';
-
-    while (accumulatedEvents.length < limit && attempts < maxAttempts) {
-        attempts++;
-
-        let url = `/poly-api/events?active=true&closed=false&limit=${limit}&offset=${currentOffset}&order=volume&ascending=false`;
-        if (apiTag && apiTag !== 'all') url += `&tag=${encodeURIComponent(apiTag)}`;
-
-        try {
-            const res = await fetch(url);
-            const data = res.ok ? await res.json() : [];
-            if (!data || data.length === 0) break;
-
-            let processed = processRawEvents(data);
-
-            if (categoryName?.toLowerCase() === 'climate-science') {
-                processed = processed.filter(ev =>
-                    ev.labels.some(label =>
-                        label.toLowerCase().includes('climate') ||
-                        label.toLowerCase().includes('science')
-                    )
-                );
-            } else if (categoryName && categoryName !== 'all') {
-                processed = processed.filter(ev =>
-                    ev.labels.some(label => label.toLowerCase() === categoryName.toLowerCase())
-                );
-            }
-
-            accumulatedEvents.push(...processed);
-            currentOffset += limit;
-
-            // אופטימיזציה: אם מצאנו לפחות 10 אירועים, אפשר לעצור כדי לא לעכב את המשתמש
-            if (accumulatedEvents.length >= 10 && categoryName !== 'all') break;
-            if (!categoryName || categoryName === 'all') break;
-
-        } catch (err) {
-            break;
-        }
+    if (categoryName && categoryName !== 'all') {
+        const apiTag = categoryName === 'Climate-science' ? 'Climate' : categoryName;
+        url += `&tag=${encodeURIComponent(apiTag)}`;
     }
 
-    const sorted = accumulatedEvents.sort((a, b) => b.volume - a.volume);
-    return sorted.slice(0, limit);
-}
+    try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`API Error: ${res.status}`);
 
+        const data = await res.json();
+        let events = processRawEvents(data);
+
+        // --- לוגיקת המיון המקומית שלך ---
+        const now = Date.now();
+
+        if (sortBy.toLowerCase() === 'volume') {
+            events.sort((a, b) => b.volume - a.volume);
+        }
+        else if (sortBy.toLowerCase() === 'newest') {
+            events.sort((a, b) => Number(b.createdAt) - Number(a.createdAt));
+        }
+        else if (sortBy.toLowerCase() === 'trending') {
+            events.sort((a, b) => {
+                // חישוב שעות מאז יצירה (מינימום שעה אחת למניעת חילוק ב-0)
+                const getHours = (time: number) => Math.max(1, (now - time) / (1000 * 60 * 60));
+
+                const scoreA = a.volume / getHours(typeof a.createdAt === 'number' ? a.createdAt : a.createdAt.getTime());
+                const scoreB = b.volume / getHours(typeof b.createdAt === 'number' ? b.createdAt : b.createdAt.getTime());
+
+                return scoreB - scoreA;
+            });
+        }
+
+        return events;
+    } catch (err) {
+        console.error("Fetch failed:", err);
+        return [];
+    }
+}
 // search:
 export async function searchEvents(searchTerm: string, limit: number = 200): Promise<Event[]> {
     if (!searchTerm) return []

@@ -23,12 +23,13 @@ export function EventIndex() {
     const [eventsToShow, setEventsToShow] = useState<Event[]>([])
 
     useEffect(() => {
+        console.log(filterBy)
         setIsAutoLoad(false)
         setPage(0)
         setAutoLoadCount(0)
         dispatch(loadEvents({ filterBy, categorie, page: 0 }))
-        setFilterBy(eventService.getDefaultFilter())
-    }, [categorie])
+        // setFilterBy(eventService.getDefaultFilter())
+    }, [categorie, filterBy.sortField])
 
     useEffect(() => {
 

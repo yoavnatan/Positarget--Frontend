@@ -176,7 +176,6 @@
 }
 
 .sorting-options {
-    margin: 1em;
     gap: .5em;
     flex-wrap: wrap;
 }

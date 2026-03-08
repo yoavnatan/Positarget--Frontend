@@ -182,3 +182,30 @@ ul.filter-carusel {
         }
     }
 }
+
+.sort-field-select {
+    display: flex;
+    gap: .5em;
+    width: max-content;
+    height: max-content;
+    padding: .8em;
+    border-radius: 2em;
+}
+
+.radix-item {
+    display: flex;
+    align-items: center;
+    gap: .5em;
+    border-radius: 7.2px;
+    cursor: pointer;
+
+    &:hover {
+        background-color: var(--border-gray);
+        color: var(--pt-black2);
+    }
+
+    &[data-state="checked"] {
+        background-color: var(--button-blue-light);
+        color: var(--button-blue-hover);
+    }
+}
