@@ -1,0 +1,138 @@
+.event-details {
+
+    margin: 1em;
+    display: grid;
+    position: relative;
+
+    .event-info {
+
+        gap: 1em;
+
+        img {
+            width: 64px;
+            height: 64px;
+            object-fit: cover;
+            border-radius: 7.2px;
+        }
+    }
+
+    .event-labels {
+        font-family: izmir-medium;
+        color: var(--pt-gray);
+        font-size: .9em;
+        margin-bottom: .5em;
+        display: flex;
+        gap: 1em;
+    }
+
+
+    .event-label:first-child {
+        position: relative;
+    }
+
+    .event-label:first-child::after {
+        position: absolute;
+        content: "•";
+        margin-left: .35em;
+    }
+
+    .inner-info a {
+        font-size: 1.25em;
+    }
+
+    .options {
+        gap: .8em;
+        margin-top: 1em;
+        flex-wrap: wrap;
+
+        .market {
+            cursor: pointer;
+            font-family: izmir-medium;
+            font-size: 1.1em;
+            border-radius: 2em;
+            background-color: var(--input-gray);
+            padding: .5em 1em;
+
+            &.active {
+                background-color: var(--pt-black2);
+                color: var(--pt-white)
+            }
+        }
+    }
+}
+
+.event-details {
+
+    margin: 1em;
+    display: grid;
+    position: relative;
+
+    .event-info {
+
+        gap: 1em;
+
+        img {
+            width: 64px;
+            height: 64px;
+            object-fit: cover;
+            border-radius: 7.2px;
+        }
+    }
+
+    .event-labels {
+        font-family: izmir-medium;
+        color: var(--pt-gray);
+        font-size: .9em;
+        margin-bottom: .5em;
+        display: flex;
+        gap: 1em;
+    }
+
+
+    .event-label:first-child {
+        position: relative;
+    }
+
+    .event-label:first-child::after {
+        position: absolute;
+        content: "•";
+        margin-left: .35em;
+    }
+
+    .inner-info a {
+        font-size: 1.25em;
+    }
+
+    .options {
+        gap: .8em;
+        margin-top: 1em;
+
+
+        .market {
+            cursor: pointer;
+            font-family: izmir-medium;
+            font-size: 1.1em;
+            border-radius: 2em;
+            background-color: var(--input-gray);
+            padding: .5em 1em;
+
+            &.active {
+                background-color: var(--pt-black2);
+                color: var(--pt-white)
+            }
+        }
+    }
+}
+
+
+.chart-wrapper-fixed {
+    width: 100%;
+    /* max-width: 600px; */
+    height: 300px;
+    position: relative;
+    margin-top: 1.5em;
+}
+
+.chart-wrapper-fixed canvas {
+    width: 100% !important;
+}

@@ -22,6 +22,7 @@
     "axios": "^1.6.0",
     "framer-motion": "^12.34.3",
     "gradient-avatar": "^1.0.2",
+    "lightweight-charts": "^5.1.0",
     "nanoid": "^5.1.6",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

@@ -25,6 +25,7 @@
 @import "cmps/event/EventList";
 @import "cmps/event/EventPreview";
 @import "cmps/event/EventFilter";
+@import "cmps/event/EventDetails.css";
 @import "cmps/event/Search.css";
 
 @import "cmps/review/ReviewEdit";

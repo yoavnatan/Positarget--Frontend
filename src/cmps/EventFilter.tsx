@@ -110,11 +110,10 @@ export function EventFilter({ filterBy, setFilterBy }: { filterBy: FilterBy, set
                             value={filterToEdit.txt} onChange={handleChange} />
                     </div>
 
-                    <div className="icon-wrapper" onClick={(ev) => {
+                    <div className={`icon-wrapper ${isSortOn ? "full" : ''}`} onClick={(ev) => {
                         ev.stopPropagation();
                         onToggleSort();
                     }}>
-                        {/* במקום {isSortOn ? <Sort /> : <Sort2 />} */}
                         <AnimatedSortIcon isSortOn={isSortOn} />
                     </div>
 

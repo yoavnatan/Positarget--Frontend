@@ -20,6 +20,9 @@ export const eventService = {
     remove,
     addEventMsg,
     searchEvents,
+    // getEventsByIds,
+    fetchEventById,
+    fetchMarketPriceHistory
 }
 window.cs = eventService
 
@@ -43,26 +46,45 @@ async function query(filterBy: FilterBy, category: string = 'all', page: number 
     return events
 }
 
-async function getEventsByIds(eventIds: string[]): Promise<Event[]> {
-    if (!eventIds || eventIds.length === 0) return [];
+// async function getEventsByIds(eventIds: string[]): Promise<Event[]> {
+//     if (!eventIds || eventIds.length === 0) return [];
+
+//     try {
+//         const promises = eventIds.map(id =>
+//             fetch(`/poly-api/event/${id}`)
+//                 .then(res => res.ok ? res.json() : null)
+//                 .catch(() => null)
+//         );
+
+//         const rawEvents = await Promise.all(promises);
+
+//         // סינון תוצאות ריקות (במקרה ש-ID לא נמצא)
+//         const validRawEvents = rawEvents.filter(ev => ev !== null);
+
+//         // שימוש בפונקציית הנירמול שלך כדי להפוך אותם לטיפוס Event
+//         return processRawEvents(validRawEvents);
+//     } catch (err) {
+//         console.error("Failed to fetch events by IDs:", err);
+//         return [];
+//     }
+// }
+
+async function fetchEventById(eventId: string): Promise<Event | null> {
+    const url = `/poly-api/events/${eventId}`;
 
     try {
-        const promises = eventIds.map(id =>
-            fetch(`/poly-api/event/${id}`)
-                .then(res => res.ok ? res.json() : null)
-                .catch(() => null)
-        );
+        const res = await fetch(url);
+        if (!res.ok) {
+            console.error(`Failed to fetch event with ID ${eventId}: ${res.statusText}`);
+            return null;
+        }
+        const rawEvent = await res.json();
+        const processedEvents = processRawEvents([rawEvent]);
 
-        const rawEvents = await Promise.all(promises);
-
-        // סינון תוצאות ריקות (במקרה ש-ID לא נמצא)
-        const validRawEvents = rawEvents.filter(ev => ev !== null);
-
-        // שימוש בפונקציית הנירמול שלך כדי להפוך אותם לטיפוס Event
-        return processRawEvents(validRawEvents);
+        return processedEvents.length > 0 ? processedEvents[0] : null;
     } catch (err) {
-        console.error("Failed to fetch events by IDs:", err);
-        return [];
+        console.error(`Error fetching event with ID ${eventId}:`, err);
+        return null;
     }
 }
 
@@ -219,6 +241,29 @@ const categories = [
     "Climate-science", "Mentions"
 ];
 
+// הוספת ה-Interface של המרקט הגולמי שמגיע מה-API (לפי הדוקומנטציה)
+interface RawMarket {
+    id: string;
+    conditionId: string;
+    question: string;
+    outcomes: string | string[];
+    outcomePrices: string | string[];
+    clobTokenIds: string | string[];
+    description?: string;
+    lastTradePrice?: number;
+    bestBid?: number;
+    bestAsk?: number;
+    volume?: number;
+    orderPriceMinTickSize?: number;
+    acceptingOrders?: boolean;
+    acceptingOrdersTimestamp?: string;
+    expiration?: string;
+    createdAt?: string;
+    updatedAt?: string;
+    endDate?: string;
+    closed?: boolean;
+}
+
 function processRawEvents(combined: any[]): Event[] {
     if (!combined.length) return [];
 
@@ -230,28 +275,51 @@ function processRawEvents(combined: any[]): Event[] {
     const uniqueRawEvents = Array.from(uniqueMap.values());
 
     return uniqueRawEvents.map(ev => {
-        const markets: Market[] = (ev.markets || []).map((m: any) => {
-            let outcomes = typeof m.outcomes === 'string' ? JSON.parse(m.outcomes) : m.outcomes;
-            let rawPrices = typeof m.outcomePrices === 'string' ? JSON.parse(m.outcomePrices) : m.outcomePrices;
+        const rawMarkets: RawMarket[] = ev.markets || [];
 
-            const outcomesList = Array.isArray(outcomes) ? outcomes : ["Yes", "No"];
-            const prices = Array.isArray(rawPrices)
-                ? rawPrices.map((p: any) => Math.round(parseFloat(p) * 100))
+        const markets: Market[] = rawMarkets.slice(0, 5).map((m: RawMarket) => {
+            const outcomes = typeof m.outcomes === 'string' ? JSON.parse(m.outcomes) : m.outcomes;
+            const rawPrices = typeof m.outcomePrices === 'string' ? JSON.parse(m.outcomePrices) : m.outcomePrices;
+            const clobTokenIds = typeof m.clobTokenIds === 'string' ? JSON.parse(m.clobTokenIds) : m.clobTokenIds;
+
+            const outcomesList: string[] = Array.isArray(outcomes) ? outcomes : ["Yes", "No"];
+            const prices: number[] = Array.isArray(rawPrices)
+                ? rawPrices.map((p: string) => Math.round(parseFloat(p) * 100))
                 : outcomesList.map(() => 50);
 
             return {
                 id: m.id || ev.id,
+                conditionId: m.conditionId || null,
                 question: m.question || ev.title,
                 outcomes: outcomesList,
                 outcomePrices: prices,
-                clobTokenIds: m.clobTokenIds || [],
-            };
+                clobTokenIds: Array.isArray(clobTokenIds) ? clobTokenIds : [],
+
+                // נתונים מלאים מה-Market API
+                description: m.description || "",
+                lastTradePrice: m.lastTradePrice,
+                bestBid: m.bestBid,
+                bestAsk: m.bestAsk,
+                volume: m.volume || 0,
+                minTickSize: m.orderPriceMinTickSize,
+                acceptingOrders: m.acceptingOrders,
+                acceptingOrdersTimestamp: m.acceptingOrdersTimestamp,
+                expiration: m.expiration,
+                createdAt: m.createdAt,
+                updatedAt: m.updatedAt,
+                endDate: m.endDate || ev.endDate
+            } as Market;
         });
 
         if (markets.length === 0) {
             markets.push({
-                id: ev.id, question: ev.title, outcomes: ["Yes", "No"], outcomePrices: [50, 50], clobTokenIds: []
-            });
+                id: ev.id,
+                conditionId: ev.conditionId || null,
+                question: ev.title,
+                outcomes: ["Yes", "No"],
+                outcomePrices: [50, 50],
+                clobTokenIds: []
+            } as Market);
         }
 
         const eventTags: string[] = Array.isArray(ev.tags)
@@ -262,15 +330,14 @@ function processRawEvents(combined: any[]): Event[] {
             eventTags.some(tag => tag.toLowerCase() === c.toLowerCase())
         ) || eventTags[0] || 'General';
 
-        // --- הוספת הלוגיקה עבור createdAt ו-endDate ---
         const createdAt = ev.createdAt ? new Date(ev.createdAt).getTime() : Date.now();
-        const endDate = ev.endDate ? new Date(ev.endDate).getTime() : Date.now() + 86400000; // ברירת מחדל מחר
+        const endDate = ev.endDate ? new Date(ev.endDate).getTime() : Date.now() + 86400000;
 
         return {
             _id: ev.id,
             title: ev.title || ev.question || "Untitled Event",
             description: ev.description || "",
-            createdAt: createdAt, // עומד בחוזה של ה-Interface
+            createdAt: createdAt,
             imgUrl: ev.image || ev.imgUrl || "https://polymarket.com/images/default.png",
             endDate: endDate,
             status: ev.closed ? 'closed' : 'open',
@@ -360,5 +427,34 @@ export async function searchEvents(searchTerm: string, limit: number = 200): Pro
     } catch (err) {
         console.error("Search failed:", err)
         return []
+    }
+}
+
+
+
+/**
+ * מושכת היסטוריית מחירים עבור מרקט ספציפי
+רזולוציית הזמן (למשל '6h', '1h', '1d')
+ */
+async function fetchMarketPriceHistory(clobTokenId: string) {
+    // שימוש ב-clobTokenId בתוך ה-URL
+    const url = `/poly-clob/prices-history?market=${clobTokenId}&interval=all`;
+
+    try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Status: ${res.status}`);
+
+        const data = await res.json();
+
+        // ה-CLOB מחזיר אובייקט עם שדה history
+        if (!data || !data.history) return [];
+
+        return data.history.map((point: { t: number, p: number }) => ({
+            time: point.t, // Unix timestamp
+            value: point.p  // Price (0-1)
+        }));
+    } catch (err) {
+        console.error("Error fetching CLOB history:", err);
+        return [];
     }
 }

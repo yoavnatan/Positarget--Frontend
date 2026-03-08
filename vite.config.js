@@ -30,7 +30,12 @@ export default defineConfig({
 				target: 'https://gamma-api.polymarket.com',
 				changeOrigin: true,
 				rewrite: (path) => path.replace(/^\/poly-api/, '')
-			}
+			},
+			'/poly-clob': {
+				target: 'https://clob.polymarket.com',
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/poly-clob/, ''),
+			},
 		}
 	}
 })

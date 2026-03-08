@@ -16,7 +16,7 @@ export const loadEvents = createAsyncThunk<
 )
 
 export const loadEvent = createAsyncThunk<Event, string>('event/loadEvent', async (eventId: string): Promise<Event> => {
-    return await eventService.getById(eventId) as Event
+    return await eventService.fetchEventById(eventId) as Event
 })
 
 export const removeEvent = createAsyncThunk('event/removeEvent', async (eventId: string) => {
@@ -72,6 +72,17 @@ const eventSlice = createSlice({
             .addCase(loadEvents.rejected, (state, action) => {
                 state.isLoading = false
                 state.error = action.error.message || 'Failed to load events'
+            })
+            .addCase(loadEvent.pending, (state) => {
+                state.isLoading = true
+            })
+            .addCase(loadEvent.fulfilled, (state, action) => {
+                state.isLoading = false
+                state.event = action.payload
+            })
+            .addCase(loadEvent.rejected, (state, action) => {
+                state.isLoading = false
+                state.error = action.error.message || 'Failed to load event'
             })
             // טיפול במחיקה (בלי להפריע ל-isLoading הראשי)
             .addCase(removeEvent.pending, (state) => {

@@ -111,7 +111,7 @@ export function EventIndex() {
         })
         if (node) observer.current.observe(node)
     }, [isLoading, isAutoLoad, hasMore, dispatch, filterBy, categorie])
-
+    console.log(events)
     return (
         <section className="event-index">
             {(isLoading && page === 0) && <TopLoader />}
