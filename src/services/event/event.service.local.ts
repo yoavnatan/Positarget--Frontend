@@ -8,7 +8,7 @@ declare global {
 import { storageService } from '../async-storage.service'
 import { makeId, saveToStorage } from '../util.service'
 import { userService } from '../user'
-import { FilterBy, Event, Market } from '../../types/event';
+import { FilterBy, Event, Market, EventComment } from '../../types/event';
 import { polyImgs } from '../imgs';
 
 const STORAGE_KEY = 'event'
@@ -22,7 +22,8 @@ export const eventService = {
     searchEvents,
     // getEventsByIds,
     fetchEventById,
-    fetchMarketPriceHistory
+    fetchMarketPriceHistory,
+    getComments,
 }
 window.cs = eventService
 
@@ -30,10 +31,9 @@ window.cs = eventService
 async function query(filterBy: FilterBy, category: string = 'all', page: number = 0) {
     // שליפת המיון מהפילטר. אם הוא ריק, ברירת המחדל היא volume
     const sortBy = filterBy.sortField || 'volume'
-    console.log(sortBy)
     // שליחת ה-sortBy ל-fetchEvents
     var events: Event[] = await fetchEvents(category, page, sortBy)
-
+    console.log('Fetched events:', events)
     // סינון טקסטואלי מקומי רק אם המשתמש הזין טקסט בחיפוש
     if (filterBy.txt) {
         const regex = new RegExp(filterBy.txt, 'i')
@@ -353,38 +353,53 @@ export async function fetchEvents(categoryName?: string, page: number = 0, sortB
     const limit = 30;
     const currentOffset = page * limit;
 
-    // אנחנו תמיד מבקשים volume מה-API כדי לקבל אירועים "משמעותיים" ולא לקבל 422
+    // מפת IDs סופית ובדוקה עבור ה-Gamma API של Polymarket
+    const CATEGORY_MAP: Record<string, string> = {
+        "politics": "2",
+        "sports": "100639",
+        "crypto": "21",
+        "finance": "120",
+        "geopolitics": "100265",
+        "earnings": "100262",
+        "tech": "1401",
+        "culture": "596",
+        "world": "1",
+        "economy": "100260",
+        "climate-science": "100267",
+        "mentions": "100251"
+    };
+
     let url = `/poly-api/events?active=true&closed=false&limit=${limit}&offset=${currentOffset}&order=volume&ascending=false`;
 
+    // הזרקת ה-ID הנכון
     if (categoryName && categoryName !== 'all') {
-        const apiTag = categoryName === 'Climate-science' ? 'Climate' : categoryName;
-        url += `&tag=${encodeURIComponent(apiTag)}`;
+        const tagId = CATEGORY_MAP[categoryName.toLowerCase()];
+        if (tagId) {
+            url += `&tag_id=${tagId}`;
+        }
     }
 
     try {
+        console.log(`Fetching: ${url}`); // תוכל לראות ב-Console שה-URL נבנה נכון
         const res = await fetch(url);
         if (!res.ok) throw new Error(`API Error: ${res.status}`);
 
         const data = await res.json();
+        if (!data || data.length === 0) return [];
+
         let events = processRawEvents(data);
 
-        // --- לוגיקת המיון המקומית שלך ---
+        // לוגיקת המיון המקומית שלך (השארתי אותה בדיוק כפי שביקשת)
         const now = Date.now();
-
         if (sortBy.toLowerCase() === 'volume') {
             events.sort((a, b) => b.volume - a.volume);
-        }
-        else if (sortBy.toLowerCase() === 'newest') {
+        } else if (sortBy.toLowerCase() === 'newest') {
             events.sort((a, b) => Number(b.createdAt) - Number(a.createdAt));
-        }
-        else if (sortBy.toLowerCase() === 'trending') {
+        } else if (sortBy.toLowerCase() === 'trending') {
             events.sort((a, b) => {
-                // חישוב שעות מאז יצירה (מינימום שעה אחת למניעת חילוק ב-0)
                 const getHours = (time: number) => Math.max(1, (now - time) / (1000 * 60 * 60));
-
                 const scoreA = a.volume / getHours(typeof a.createdAt === 'number' ? a.createdAt : a.createdAt.getTime());
                 const scoreB = b.volume / getHours(typeof b.createdAt === 'number' ? b.createdAt : b.createdAt.getTime());
-
                 return scoreB - scoreA;
             });
         }
@@ -436,10 +451,11 @@ export async function searchEvents(searchTerm: string, limit: number = 200): Pro
  * מושכת היסטוריית מחירים עבור מרקט ספציפי
 רזולוציית הזמן (למשל '6h', '1h', '1d')
  */
-async function fetchMarketPriceHistory(clobTokenId: string) {
+async function fetchMarketPriceHistory(clobTokenId: string, interval: string = 'all'): Promise<{ time: number, value: number }[]> {
     // שימוש ב-clobTokenId בתוך ה-URL
-    const url = `/poly-clob/prices-history?market=${clobTokenId}&interval=all`;
-
+    if (!interval) interval = 'all';
+    const url = `/poly-clob/prices-history?market=${clobTokenId}&interval=${interval}`;
+    console.log(url)
     try {
         const res = await fetch(url);
         if (!res.ok) throw new Error(`Status: ${res.status}`);
@@ -455,6 +471,31 @@ async function fetchMarketPriceHistory(clobTokenId: string) {
         }));
     } catch (err) {
         console.error("Error fetching CLOB history:", err);
+        return [];
+    }
+}
+
+/**
+ * Fetches comments for a specific event.
+ * @param eventId The ID of the event to fetch comments for.
+ * @returns A promise that resolves to an array of comments.
+ */
+// event.service.ts
+
+async function getComments(eventId: string): Promise<EventComment[]> {
+    // משתמשים בנתיב הפרוקסי שהגדרנו ב-Vite
+    const url = `/poly-comments?parent_entity_type=Event&parent_entity_id=${eventId}`;
+
+    try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Failed to fetch comments: ${res.statusText}`);
+        const data = await res.json();
+
+        // Polymarket מחזירים לפעמים מערך ישיר ולפעמים אובייקט עם שדה comments
+        const comments = Array.isArray(data) ? data : (data.comments || []);
+        return comments;
+    } catch (err) {
+        console.error(`Error fetching comments for event ${eventId}:`, err);
         return [];
     }
 }

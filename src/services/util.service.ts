@@ -54,3 +54,83 @@ export function loadFromStorage(key: string) {
     const data = localStorage.getItem(key)
     return (data) ? JSON.parse(data) : undefined
 }
+function stringToColor(str: string) {
+    let hash = 0
+    for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash)
+    }
+    const r = (hash & 0xFF0000) >> 16
+    const g = (hash & 0x00FF00) >> 8
+    const b = hash & 0x0000FF
+    return `rgb(${r % 255}, ${g % 255}, ${b % 255})`
+}
+
+export function getAvatarStyle(userId: string = 'guest') {
+    // פונקציה פנימית ליצירת מספר ייחודי מהמחרוזת
+    const getHash = (str: string) => {
+        let hash = 0
+        for (let i = 0; i < str.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash)
+        }
+        return Math.abs(hash)
+    }
+
+    const hash = getHash(userId)
+
+    // יצירת גוונים שונים על בסיס ה-Hash
+    // (n * 137.5) זו נוסחה מתמטית מעולה לפיזור צבעים (Golden Angle)
+    const h1 = (hash) % 360
+    const h2 = (hash + 90) % 360
+    const h3 = (hash + 180) % 360
+    const h4 = (hash + 270) % 360
+
+    // בניית הצבעים בפורמט HSL (Hue, Saturation, Lightness)
+    const c1 = `hsl(${h1}, 70%, 60%)`
+    const c2 = `hsl(${h2}, 80%, 50%)`
+    const c3 = `hsl(${h3}, 75%, 65%)`
+    const c4 = `hsl(${h4}, 70%, 55%)`
+    const base = `hsl(${(hash + 45) % 360}, 60%, 40%)`
+
+    return {
+        backgroundColor: base,
+        backgroundImage: `
+            radial-gradient(at 66% 77%, ${c1} 0px, transparent 55%),
+            radial-gradient(at 29% 97%, ${c2} 0px, transparent 55%),
+            radial-gradient(at 99% 86%, ${c3} 0px, transparent 55%),
+            radial-gradient(at 29% 88%, ${c4} 0px, transparent 55%)
+        `,
+        borderRadius: '50%',
+
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'white',
+        fontWeight: 'bold',
+        textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+    }
+}
+
+export function timeAgo(dateString: string): string {
+    const date = new Date(dateString);
+    const now = new Date();
+    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    const intervals: { [key: string]: number } = {
+        year: 31536000,
+        month: 2592000,
+        week: 604800,
+        day: 86400,
+        hour: 3600,
+        minute: 60,
+        second: 1,
+    };
+
+    for (const [key, value] of Object.entries(intervals)) {
+        const count = Math.floor(seconds / value);
+        if (count >= 1) {
+            return `${count} ${key}${count > 1 ? 's' : ''} ago`;
+        }
+    }
+
+    return 'just now';
+}

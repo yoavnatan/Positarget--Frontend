@@ -39,3 +39,14 @@ export interface Msg {
     txt: string;
 }
 
+
+export interface EventComment {
+    id: string;
+    by: {
+        _id: string;
+        fullname: string;
+        imgUrl?: string;
+    };
+    txt: string;
+    createdAt: number;
+}

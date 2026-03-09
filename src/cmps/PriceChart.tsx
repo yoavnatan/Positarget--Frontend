@@ -11,10 +11,69 @@ export function PriceChart({ data }: { data: { time: number; value: number }[] }
     const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (!containerRef.current || !wrapperRef.current || !data?.length) return;
+        if (!containerRef.current || !wrapperRef.current) return;
 
         const root = containerRef.current;
         const wrapper = wrapperRef.current;
+
+        if (!data?.length) {
+            const chart = createChart(root, {
+                width: wrapper.clientWidth,
+                height: 300,
+                handleScroll: false,
+                handleScale: false,
+                rightPriceScale: {
+                    borderVisible: false,
+                    scaleMargins: { top: 0.1, bottom: 0.1 },
+                },
+                timeScale: {
+                    borderVisible: false,
+                    visible: false,
+                },
+                layout: {
+                    background: { type: ColorType.Solid, color: 'transparent' },
+                    textColor: '#919496',
+                    fontSize: 11,
+                    attributionLogo: false,
+                },
+                grid: {
+                    vertLines: { visible: false },
+                    horzLines: { color: 'rgba(255,255,255,0.05)' },
+                },
+                crosshair: {
+                    vertLine: { visible: false },
+                    horzLine: { visible: false },
+                },
+                localization: {
+                    priceFormatter: (price: number) => `${price.toFixed(1)}%`,
+                },
+            });
+
+            const series = chart.addSeries(LineSeries, {
+                color: 'transparent',
+                lineWidth: 2,
+                lastValueVisible: false,
+                priceLineVisible: false,
+            });
+
+            const now = Math.floor(Date.now() / 1000) as UTCTimestamp;
+            series.setData([
+                { time: (now - 3600) as UTCTimestamp, value: 20 },
+                { time: now, value: 80 },
+            ]);
+
+            chart.timeScale().fitContent();
+
+            const observer = new ResizeObserver((entries) => {
+                chart.applyOptions({ width: entries[0].contentRect.width });
+            });
+            observer.observe(wrapper);
+
+            return () => {
+                chart.remove();
+                observer.disconnect();
+            };
+        }
 
         const formattedData: DataPoint[] = [...data]
             .map(d => ({

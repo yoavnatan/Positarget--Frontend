@@ -20,6 +20,7 @@ import { convertToUsdc } from '../services/currencyAPI'
 import * as Select from '@radix-ui/react-select';
 import { ChevronDownIcon } from '@radix-ui/react-icons';
 import { searchEvents } from '../services/event/event.service.local'
+import { getAvatarStyle } from '../services/util.service'
 
 export function AppHeader() {
 	const carouselRef = useRef<HTMLDivElement>(null)
@@ -308,8 +309,12 @@ export function AppHeader() {
 								<div className="img-container"
 									onMouseEnter={handleMouseEnter}
 									onMouseLeave={handleMouseLeave} >
-									<img className="user-img" src="/img/grad1.png"
-									/>
+									<div
+										className="user-img"
+										style={getAvatarStyle(user._id)}
+									>
+
+									</div>
 									<Arrow className="icon arrow" />
 								</div>
 								<AnimatePresence>

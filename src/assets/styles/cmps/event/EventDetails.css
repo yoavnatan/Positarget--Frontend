@@ -1,5 +1,5 @@
 .event-details {
-
+    flex: 2.3;
     margin: 1em;
     display: grid;
     position: relative;
@@ -135,4 +135,179 @@
 
 .chart-wrapper-fixed canvas {
     width: 100% !important;
+}
+
+.event-details .controls {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1em;
+    color: var(--pt-gray);
+
+    .buttons {
+        cursor: pointer;
+        display: flex;
+        gap: 1em;
+
+        .active {
+            color: var(--pt-black2);
+            font-weight: bold;
+        }
+    }
+}
+
+/* Comments */
+
+.comments-section {
+    margin-top: 2rem;
+    padding: 1rem;
+    border-top: 1px solid #e5e7eb;
+
+    h3 {
+        font-size: 1.25rem;
+        margin-bottom: 1.5rem;
+        color: #111827;
+    }
+}
+
+.comment-card {
+    gap: 12px;
+    margin-bottom: 20px;
+    align-items: flex-start;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+    text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.user-img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+    text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.comment-content {
+    background-color: #f9fafb;
+    padding: 12px 16px;
+    border-radius: 12px;
+    flex-grow: 1;
+
+    .comment-header {
+        justify-content: space-between;
+        margin-bottom: 4px;
+
+        .user-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--pt-black);
+        }
+
+        .comment-date {
+            font-size: 0.75rem;
+            color: var(--pt-gray);
+        }
+    }
+
+    .comment-text {
+        font-family: izmir-light;
+        font-size: 0.9em;
+        line-height: 1.5;
+        color: var(--pt-black2);
+        margin: 0;
+    }
+}
+
+/* Trading */
+
+.trading-section {
+    width: 500px;
+    height: 500px;
+    position: sticky;
+    top: 156px;
+    background-color: var(--pt-white);
+    border: 1px solid var(--border-gray);
+    border-radius: 15.2px;
+    margin: 2em;
+    flex: 1;
+    box-shadow: 3px 2px 12px 2px rgba(0, 0, 0, 0.05);
+
+    header {
+        border-bottom: 1px solid var(--border-gray);
+        padding: .5em .5em 0em 1em;
+        justify-content: space-between;
+    }
+
+    .trading-rules {
+        cursor: pointer;
+        gap: 1em;
+        color: var(--pt-gray);
+
+        .active {
+            color: var(--pt-black2);
+        }
+    }
+
+    .trading-select.radix-trigger {
+        cursor: pointer;
+        border: none;
+        gap: 3px;
+        justify-content: end;
+
+    }
+
+    .trading-buttons {
+        display: flex;
+        padding: 1em;
+        margin: 0;
+
+        .trading-button {
+            flex: 1;
+            padding: .8em;
+            border-radius: 9.2px;
+            border: none;
+            color: var(--pt-white);
+            font-size: 1.1em;
+            cursor: pointer;
+        }
+
+        .trading-button.yes.active {
+            background-color: var(--button-green-hover);
+            color: var(--pt-white);
+        }
+
+        .trading-button {
+            background-color: var(--input-gray);
+            color: var(--pt-gray);
+        }
+
+        .trading-button.no.active {
+            background-color: var(--button-red-hover);
+            color: var(--pt-white);
+
+        }
+
+        .trading-button:hover:not(.active) {
+            background-color: var(--pt-gray-lighter);
+            color: var(--pt-gray-light);
+        }
+
+    }
+
 }

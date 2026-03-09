@@ -1,4 +1,4 @@
-import { Event, Market } from '../../types/event'
+import { Event, EventComment, Market } from '../../types/event'
 import { httpService } from '../http.service'
 
 export const eventService = {
@@ -11,6 +11,7 @@ export const eventService = {
     // getEventsByIds,
     fetchEventById,
     fetchMarketPriceHistory,
+    getComments,
 }
 
 async function query(filterBy = { txt: '' }) {
@@ -195,57 +196,66 @@ function processRawEvents(combined: any[]): Event[] {
         } as Event;
     });
 }
-export async function fetchEvents(categoryName?: string, page: number = 0): Promise<Event[]> {
-    let accumulatedEvents: Event[] = [];
+export async function fetchEvents(categoryName?: string, page: number = 0, sortBy: string = 'volume'): Promise<Event[]> {
     const limit = 30;
-    let currentOffset = page * limit;
+    const currentOffset = page * limit;
 
-    const maxAttempts = (page === 0) ? 10 : 4;
-    let attempts = 0;
+    // מפת IDs סופית ובדוקה עבור ה-Gamma API של Polymarket
+    const CATEGORY_MAP: Record<string, string> = {
+        "politics": "2",
+        "sports": "100639",
+        "crypto": "21",
+        "finance": "120",
+        "geopolitics": "100265",
+        "earnings": "100262",
+        "tech": "1401",
+        "culture": "596",
+        "world": "1",
+        "economy": "100260",
+        "climate-science": "100267",
+        "mentions": "100251"
+    };
 
-    let apiTag = categoryName;
-    if (categoryName?.toLowerCase() === 'climate-science') apiTag = 'Climate';
+    let url = `/poly-api/events?active=true&closed=false&limit=${limit}&offset=${currentOffset}&order=volume&ascending=false`;
 
-    while (accumulatedEvents.length < limit && attempts < maxAttempts) {
-        attempts++;
-
-        let url = `/poly-api/events?active=true&closed=false&limit=${limit}&offset=${currentOffset}&order=volume&ascending=false`;
-        if (apiTag && apiTag !== 'all') url += `&tag=${encodeURIComponent(apiTag)}`;
-
-        try {
-            const res = await fetch(url);
-            const data = res.ok ? await res.json() : [];
-            if (!data || data.length === 0) break;
-
-            let processed = processRawEvents(data);
-
-            if (categoryName?.toLowerCase() === 'climate-science') {
-                processed = processed.filter(ev =>
-                    ev.labels.some(label =>
-                        label.toLowerCase().includes('climate') ||
-                        label.toLowerCase().includes('science')
-                    )
-                );
-            } else if (categoryName && categoryName !== 'all') {
-                processed = processed.filter(ev =>
-                    ev.labels.some(label => label.toLowerCase() === categoryName.toLowerCase())
-                );
-            }
-
-            accumulatedEvents.push(...processed);
-            currentOffset += limit;
-
-            // אופטימיזציה: אם מצאנו לפחות 10 אירועים, אפשר לעצור כדי לא לעכב את המשתמש
-            if (accumulatedEvents.length >= 10 && categoryName !== 'all') break;
-            if (!categoryName || categoryName === 'all') break;
-
-        } catch (err) {
-            break;
+    // הזרקת ה-ID הנכון
+    if (categoryName && categoryName !== 'all') {
+        const tagId = CATEGORY_MAP[categoryName.toLowerCase()];
+        if (tagId) {
+            url += `&tag_id=${tagId}`;
         }
     }
 
-    const sorted = accumulatedEvents.sort((a, b) => b.volume - a.volume);
-    return sorted.slice(0, limit);
+    try {
+        console.log(`Fetching: ${url}`); // תוכל לראות ב-Console שה-URL נבנה נכון
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`API Error: ${res.status}`);
+
+        const data = await res.json();
+        if (!data || data.length === 0) return [];
+
+        let events = processRawEvents(data);
+
+        // לוגיקת המיון המקומית שלך (השארתי אותה בדיוק כפי שביקשת)
+        const now = Date.now();
+        if (sortBy.toLowerCase() === 'volume') {
+            events.sort((a, b) => b.volume - a.volume);
+        } else if (sortBy.toLowerCase() === 'newest') {
+            events.sort((a, b) => Number(b.createdAt) - Number(a.createdAt));
+        } else if (sortBy.toLowerCase() === 'trending') {
+            events.sort((a, b) => {
+                const getHours = (time: number) => Math.max(1, (now - time) / (1000 * 60 * 60));
+                const scoreA = a.volume / getHours(typeof a.createdAt === 'number' ? a.createdAt : a.createdAt.getTime());
+                const scoreB = b.volume / getHours(typeof b.createdAt === 'number' ? b.createdAt : b.createdAt.getTime());
+                return scoreB - scoreA;
+            });
+        }
+
+        return events;
+    } catch (err) {
+        console.error("Fetch failed:", err);
+        return [];
+    }
 }
 
 // search:
@@ -300,6 +310,26 @@ async function fetchMarketPriceHistory(conditionId: string, interval: string = '
         }));
     } catch (err) {
         console.error("Error fetching price history:", err);
+        return [];
+    }
+}
+
+/**
+ * Fetches comments for a specific event.
+ * @param eventId The ID of the event to fetch comments for.
+ * @returns A promise that resolves to an array of comments.
+ */
+async function getComments(eventId: string): Promise<EventComment[] | []> {
+    const url = `https://gamma-api.polymarket.com/comments?parent_entity_type=Event&parent_entity_id=${eventId}`;
+
+    try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Failed to fetch comments: ${res.statusText}`);
+
+        const data = await res.json();
+        return data.comments || [];
+    } catch (err) {
+        console.error(`Error fetching comments for event ${eventId}:`, err);
         return [];
     }
 }

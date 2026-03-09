@@ -235,7 +235,8 @@ footer {
     .btn-text {
         font-size: clamp(0.5rem, 80%, 1rem);
         display: inline-block;
-        white-space: nowrap;
+        white-space: wrap;
+        max-width: 110px;
         /* מונע מהטקסט לרדת שורה */
     }
 }
