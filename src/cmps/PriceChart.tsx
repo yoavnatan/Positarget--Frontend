@@ -34,11 +34,12 @@ export function PriceChart({ data }: { data: { time: number; value: number }[] }
                     background: { type: ColorType.Solid, color: 'transparent' },
                     textColor: '#919496',
                     fontSize: 11,
+                    fontFamily: 'inherit',
                     attributionLogo: false,
                 },
                 grid: {
                     vertLines: { visible: false },
-                    horzLines: { color: 'rgba(255,255,255,0.05)' },
+                    horzLines: { visible: true, style: 4 },
                 },
                 crosshair: {
                     vertLine: { visible: false },
@@ -58,8 +59,8 @@ export function PriceChart({ data }: { data: { time: number; value: number }[] }
 
             const now = Math.floor(Date.now() / 1000) as UTCTimestamp;
             series.setData([
-                { time: (now - 3600) as UTCTimestamp, value: 20 },
-                { time: now, value: 80 },
+                { time: (now - 3600) as UTCTimestamp, value: 0 },
+                { time: now, value: 100 },
             ]);
 
             chart.timeScale().fitContent();
@@ -117,11 +118,12 @@ export function PriceChart({ data }: { data: { time: number; value: number }[] }
                 background: { type: ColorType.Solid, color: 'transparent' },
                 textColor: '#919496',
                 fontSize: 11,
+                fontFamily: 'inherit',
                 attributionLogo: false,
             },
             grid: {
                 vertLines: { visible: false },
-                horzLines: { color: 'rgba(255,255,255,0.05)' },
+                horzLines: { visible: true, style: 4 },
             },
             crosshair: {
                 vertLine: { color: '#919496', style: 2, labelVisible: false },
@@ -142,12 +144,17 @@ export function PriceChart({ data }: { data: { time: number; value: number }[] }
         series.setData(formattedData);
         chart.timeScale().fitContent();
 
+        const dpr = window.devicePixelRatio || 1;
+
         const overlay = document.createElement('canvas');
         overlay.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:5;';
-        overlay.width = wrapper.clientWidth;
-        overlay.height = 300;
+        overlay.width = wrapper.clientWidth * dpr;
+        overlay.height = 300 * dpr;
+        overlay.style.width = `${wrapper.clientWidth}px`;
+        overlay.style.height = `300px`;
         root.appendChild(overlay);
         const ctx = overlay.getContext('2d')!;
+        ctx.scale(dpr, dpr);
 
         const dot = document.createElement('div');
         dot.style.cssText = `
@@ -212,7 +219,7 @@ export function PriceChart({ data }: { data: { time: number; value: number }[] }
         }
 
         function drawChart(drawnUpTo: number, mouseX: number | null, isLastFrame = false) {
-            ctx.clearRect(0, 0, overlay.width, overlay.height);
+            ctx.clearRect(0, 0, overlay.width / dpr, overlay.height / dpr);
 
             const blueEnd = mouseX !== null ? Math.min(mouseX, drawnUpTo) : drawnUpTo;
 
@@ -275,9 +282,9 @@ export function PriceChart({ data }: { data: { time: number; value: number }[] }
             function flash(now: number) {
                 const progress = Math.min((now - flashStart) / flashDuration, 1);
                 const eased = 1 - Math.pow(1 - progress, 2);
-                drawChart(overlay.width, currentMouseX, true);
-                const flashX = eased * overlay.width;
-                const flashWidth = overlay.width * 0.08;
+                drawChart(overlay.width / dpr, currentMouseX, true);
+                const flashX = eased * (overlay.width / dpr);
+                const flashWidth = (overlay.width / dpr) * 0.08;
                 ctx.save();
                 ctx.beginPath();
                 for (let i = 0; i < points.length; i++) {
@@ -311,10 +318,10 @@ export function PriceChart({ data }: { data: { time: number; value: number }[] }
             const progress = Math.min(elapsed / duration, 1);
             const eased = 1 - Math.pow(1 - progress, 3);
             if (progress < 1) {
-                drawChart(eased * overlay.width, currentMouseX, false);
+                drawChart(eased * (overlay.width / dpr), currentMouseX, false);
                 animationFrame = requestAnimationFrame(animate);
             } else {
-                drawChart(overlay.width, currentMouseX, true);
+                drawChart(overlay.width / dpr, currentMouseX, true);
                 animationDone = true;
                 if (currentMouseX === null) pulse.style.display = 'block';
                 setTimeout(animateFlash, 500);
@@ -341,13 +348,17 @@ export function PriceChart({ data }: { data: { time: number; value: number }[] }
                     }
                 }
             }
-            if (animationDone) drawChart(overlay.width, currentMouseX);
+            if (animationDone) drawChart(overlay.width / dpr, currentMouseX);
         });
 
         const observer = new ResizeObserver((entries) => {
             const w = entries[0].contentRect.width;
-            overlay.width = w;
-            overlay.height = 300;
+            const newDpr = window.devicePixelRatio || 1;
+            overlay.width = w * newDpr;
+            overlay.height = 300 * newDpr;
+            overlay.style.width = `${w}px`;
+            overlay.style.height = `300px`;
+            ctx.scale(newDpr, newDpr);
             chart.applyOptions({ width: w });
             chart.timeScale().fitContent();
             if (animationDone) drawChart(w, currentMouseX);

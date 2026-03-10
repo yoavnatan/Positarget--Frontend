@@ -5,12 +5,13 @@
   --pt-gray: #77808d;
   --pt-gray-light: #c9ced3;
   --pt-gray-lighter: #f5f6f7;
+  --pt-gray-hover: #f9fafb;
   --input-gray: #f4f5f6;
   --border-gray: #e7e8ea;
 
   --button-blue: #1352f0;
   --button-blue-light: #eaeffe;
-
+  --special-button-blue: #0b41c1;
   --button-blue-hover: #1249d8;
   --button-green: #e6f7eb;
   --button-green-hover: #2fa159;
@@ -23,4 +24,7 @@
   --sport-button-orange-hover: #e0a001;
   --sport-button-blue: #e8edf6;
   --sport-button-blue-hover: #0040a0;
+
+  --to-win-green: #41c772;
+
 }

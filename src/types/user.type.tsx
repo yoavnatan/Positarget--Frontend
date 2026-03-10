@@ -11,6 +11,7 @@ export interface User {
     cash?: number          // יתרת מזומן
     portfolio?: Position[] // החזקות לפי מרקט
     favoriteEvents?: string[] // רשימת אירועים מועדפים
+    selectedOutcome?: 'Yes' | 'No' | '' // תוצאה נבחרת למסחר
 }
 
 export interface UserCred {

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
+import Money from '../assets/svg/money.svg?react'
 
 import { useAppDispatch, useAppSelector } from '../store/store'
 import { RootState } from '../store/store'
@@ -15,17 +16,24 @@ import { EventComment } from '../types/event'
 import { getAvatarStyle, timeAgo } from '../services/util.service'
 import * as Select from '@radix-ui/react-select'
 import { ChevronDownIcon } from '@radix-ui/react-icons'
+import { setSelectedOutcome } from '../store/slices/user.slice'
+import { current } from '@reduxjs/toolkit'
 
 export function EventDetails() {
   const dispatch = useAppDispatch()
   const { eventId } = useParams()
   const { event } = useAppSelector((state) => state.eventModule)
+  const { user } = useAppSelector((state: RootState) => state.userModule)
+  const { selectedOutcome } = useAppSelector((state: RootState) => state.userModule)
   const [activeMarket, setActiveMarket] = useState<Market | null>(null)
   const [chartData, setChartData] = useState<{ time: number, value: number }[]>([]);
   const [timeframe, setTimeframe] = useState('all')
   const [comments, setComments] = useState<EventComment[] | []>([])
   const [tradingMethod, setTradingMethod] = useState<'market' | 'limit'>('market')
-  const [selectedOutcome, setSelectedOutcome] = useState<string>('yes')
+  const [tradingDirection, setTradingDirection] = useState<'buy' | 'sell'>('buy')
+  const [orderAmount, setOrderAmount] = useState<string>('')
+  const [limitPrice, setLimitPrice] = useState<string>('')
+  const [shares, setShares] = useState<number | ''>()
 
   useEffect(() => {
     if (activeMarket && activeMarket.clobTokenIds) {
@@ -40,7 +48,14 @@ export function EventDetails() {
   }, [activeMarket, timeframe]);
 
   useEffect(() => {
+    return () => {
+      dispatch(setSelectedOutcome(''))
+    }
+  }, [])
+
+  useEffect(() => {
     if (eventId) dispatch(loadEvent(eventId))
+    // dispatch(setSelectedOutcome('Yes'))
   }, [eventId])
 
   useEffect(() => {
@@ -89,10 +104,42 @@ export function EventDetails() {
     }
   }
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value.replace(/[^0-9.]/g, '')
 
+    // 1. מניעת יותר מנקודה אחת
+    const parts = val.split('.')
+    if (parts.length > 2) val = parts[0] + '.' + parts.slice(1).join('')
 
-  console.log(event)
-  console.log(comments)
+    // 2. הגבלה ל-2 ספרות אחרי הנקודה (רק אם יש נקודה)
+    if (parts.length > 1 && parts[1].length > 2) {
+      val = `${parts[0]}.${parts[1].slice(0, 2)}`
+    }
+
+    if (tradingMethod === 'market') {
+      setOrderAmount(val)
+    } else {
+      // 3. הגנה על מחיר מקסימלי (למשל 100 סנט)
+      if (+val > 100) return
+      setLimitPrice(val)
+    }
+  }
+
+  function handleLimit(change: number) {
+    let currentPrice = parseFloat(limitPrice) || 0
+    currentPrice += (0.1 * change)
+    console.log(currentPrice)
+    currentPrice = Math.round(currentPrice * 10) / 10
+    if (currentPrice < 0) currentPrice = 0
+    if (currentPrice > 100) currentPrice = 100
+    setLimitPrice(currentPrice.toString())
+  }
+
+  const selectedOutcomeIndex = selectedOutcome === 'Yes' ? 0 : selectedOutcome === 'No' ? 1 : null;
+  const price = selectedOutcomeIndex !== null && activeMarket?.outcomePrices[selectedOutcomeIndex]
+    ? activeMarket.outcomePrices[selectedOutcomeIndex] / 100
+    : 0;
+  const toWin = price > 0 ? (+orderAmount / price).toFixed(2) : '0';
   return (
     <div className="event-details-page flex">
       <section className="event-details container">
@@ -187,9 +234,9 @@ export function EventDetails() {
 
       <section className="trading-section container">
         <header className="trading-header flex justify-between align-center">
-          <div className="trading-rules flex">
-            <div className="trading-rule">Buy</div>
-            <div className="trading-rule">Sell</div>
+          <div className="trading-dirs flex">
+            <div className={`trading-dir ${tradingDirection === 'buy' ? "active" : ""}`} onClick={() => setTradingDirection('buy')}>Buy</div>
+            <div className={`trading-dir ${tradingDirection === 'sell' ? "active" : ""}`} onClick={() => setTradingDirection('sell')}>Sell</div>
           </div>
           <div className="trading-method">
             <Select.Root
@@ -222,12 +269,122 @@ export function EventDetails() {
 
         <main>
           <div className="trading-buttons flex">
-            <button className={`trading-button yes ${selectedOutcome === 'yes' ? "active" : ""}`} onClick={() => setSelectedOutcome('yes')}>{activeMarket?.outcomes[0]} {activeMarket?.outcomePrices[0]}¢</button>
-            <button className={`trading-button no ${selectedOutcome === 'no' ? "active" : ""}`} onClick={() => setSelectedOutcome('no')}>{activeMarket?.outcomes[1]} {activeMarket?.outcomePrices[1]}¢</button>
+            <button className={`trading-button yes ${selectedOutcome === 'Yes' ? "active" : ""}`} onClick={() => dispatch(setSelectedOutcome('Yes'))}>{activeMarket?.outcomes[0]} {activeMarket?.outcomePrices[0]}¢</button>
+            <button className={`trading-button no ${selectedOutcome === 'No' ? "active" : ""}`} onClick={() => dispatch(setSelectedOutcome('No'))}>{activeMarket?.outcomes[1]} {activeMarket?.outcomePrices[1]}¢</button>
           </div>
+          {tradingMethod === 'market' ? (
+            <>
+              {tradingDirection === 'buy'
+                ? (
+                  <div className="market-order flex">
+                    <div className="order-info">
+                      <h4>Amount</h4>
+                      <h6>Balance ${user?.cash?.toFixed(2)}</h6>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="$0"
+                      value={orderAmount ? `$${orderAmount}` : ''}
+                      onChange={handleInputChange}
+                      className="order-input"
+                    />
+                  </div>)
+                : (
+                  <div className="market-order flex">
+                    <div className="order-info">
+                      <h4>Shares</h4>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="0"
+                      value={orderAmount ? `${orderAmount}` : ''}
+                      onChange={handleInputChange}
+                      className="order-input"
+                    />
+                  </div>
+                )}
+              {<div className="money-btns flex">
+                <button className="money-btn" onClick={() => setOrderAmount(prev => (parseFloat(prev) + 1).toString())}>+$1</button>
+                <button className="money-btn" onClick={() => setOrderAmount(prev => (parseFloat(prev) + 5).toString())}>+$5</button>
+                <button className="money-btn" onClick={() => setOrderAmount(prev => (parseFloat(prev) + 10).toString())}>+$10</button>
+                <button className="money-btn" onClick={() => setOrderAmount(prev => (parseFloat(prev) + 100).toString())}>+$100</button>
+                <button className="money-btn" onClick={() => setOrderAmount(user?.cash ? user.cash.toFixed(2) : '0')}>Max</button>
+              </div>}
+            </>
+
+          ) : (
+            <>
+              <div className="limit-order flex">
+                <h4>Limit Price</h4>
+                <div className="limit-input container flex">
+                  <div className="limit-btn" onClick={() => handleLimit(-1)}>-</div>
+                  <input type="text" placeholder="0.0¢" value={limitPrice ? `${limitPrice}¢` : ''} onChange={handleInputChange} />
+                  <div className="limit-btn" onClick={() => handleLimit(+1)}>+</div>
+                </div>
+              </div>
+
+              <div className="shares flex">
+                <h4>Shares</h4>
+                <input
+                  type="text"
+                  placeholder="0"
+                  value={shares}
+                  onChange={(ev) => {
+                    // מנקה כל מה שהוא לא מספר (0-9)
+                    const val = ev.target.value.replace(/\D/g, '');
+                    // הופך למספר רק אם יש ערך, אחרת משאיר מחרוזת ריקה (כדי שיהיה אפשר למחוק הכל)
+                    setShares(val === '' ? '' : +val);
+                  }}
+                />
+              </div>
+
+              <div className="money-btns flex">
+                <button className="money-btn" onClick={() => setShares(prev => (Number(prev) || 0) - 100)}>-100</button>
+                <button className="money-btn" onClick={() => setShares(prev => (Number(prev) || 0) - 10)}>-10</button>
+                <button className="money-btn" onClick={() => setShares(prev => (Number(prev) || 0) + 10)}>+10</button>
+                <button className="money-btn" onClick={() => setShares(prev => (Number(prev) || 0) + 100)}>+100</button>
+                <button className="money-btn gradient" onClick={() => setShares(prev => (Number(prev) || 0) + 200)}>+200</button>
+              </div>
+            </>
+          )}
         </main>
+        <footer>
+          <div className={`order-summary flex ${(+orderAmount > 0) || tradingMethod === "limit" ? 'open' : ''} ${tradingDirection === 'sell' ? 'sell' : ''}`}>
+            <div className="order-info">
+              {tradingMethod === 'limit' && tradingDirection === 'buy' && <h2>Total</h2>}
+              <h2>{`${tradingDirection === 'buy' ? 'To win' : `You'll receive`}`} {tradingMethod === 'market' && <Money className="money-icon" />}</h2>
+              {tradingMethod === 'market' && <h6>Avg. Price</h6>}
+            </div>
+            {tradingMethod === 'market'
+              ?
+              (<div className="to-win">
+                ${toWin}
+              </div>)
+              : (
+                <div className="limit-summary">
+                  {tradingDirection === 'buy' && <div className={`total`}>
+                    ${limitPrice && shares ? ((+limitPrice / 100) * +shares).toFixed(2) : '0'}
+                  </div>}
+                  <div className="to-win">
+                    <Money className="money-icon limit" /> ${tradingDirection === 'buy' ? shares || 0 : limitPrice && shares ? ((+limitPrice / 100) * +shares).toFixed(2) : '0'}
+                  </div>
+                </div>
+              )
+
+            }
+          </div>
+          {user?.cash === 0
+            ?
+            (<div className="signup-link">Deposit</div>)
+            :
+            (<div className="button-wrapper">
+              <button className="place-order-btn">{`${user ? `${tradingDirection === 'buy' ? 'Buy' : 'Sell'}` : ''} ${user ? selectedOutcome : 'Trade'}`} </button>
+            </div>)
+          }
+
+        </footer>
       </section>
-    </div>
+    </div >
   )
 }
 

@@ -13,6 +13,7 @@ interface UserState {
     count: number
     isLoading: boolean // לטעינת רשימת משתמשים או פרופיל
     lastUser: User | null
+    selectedOutcome: 'Yes' | 'No' | ''
 }
 
 const initialState: UserState = {
@@ -21,7 +22,8 @@ const initialState: UserState = {
     watchedUser: null,
     count: 10,
     isLoading: false,
-    lastUser: null
+    lastUser: null,
+    selectedOutcome: 'Yes',
 }
 
 // --- Async Thunks ---
@@ -115,6 +117,9 @@ const userSlice = createSlice({
                 userService.saveLoggedinUser(state.user)
             }
         },
+        setSelectedOutcome(state, action: PayloadAction<'Yes' | 'No' | ''>) {
+            state.selectedOutcome = action.payload
+        }
     },
     extraReducers: (builder) => {
         builder
@@ -188,5 +193,5 @@ const userSlice = createSlice({
 
 })
 
-export const { increment, decrement, changeCount, setScore } = userSlice.actions
+export const { increment, decrement, changeCount, setScore, setSelectedOutcome } = userSlice.actions
 export const userReducer = userSlice.reducer
