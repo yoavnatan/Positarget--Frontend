@@ -13,7 +13,8 @@ interface UserState {
     count: number
     isLoading: boolean // לטעינת רשימת משתמשים או פרופיל
     lastUser: User | null
-    selectedOutcome: 'Yes' | 'No' | ''
+    selectedOutcome: string
+    selectedMarketId: string | null
 }
 
 const initialState: UserState = {
@@ -24,6 +25,7 @@ const initialState: UserState = {
     isLoading: false,
     lastUser: null,
     selectedOutcome: 'Yes',
+    selectedMarketId: null,
 }
 
 // --- Async Thunks ---
@@ -117,8 +119,11 @@ const userSlice = createSlice({
                 userService.saveLoggedinUser(state.user)
             }
         },
-        setSelectedOutcome(state, action: PayloadAction<'Yes' | 'No' | ''>) {
+        setSelectedOutcome(state, action: PayloadAction<string>) {
             state.selectedOutcome = action.payload
+        },
+        setSelectedMarketId(state, action: PayloadAction<string | null>) {
+            state.selectedMarketId = action.payload
         }
     },
     extraReducers: (builder) => {
@@ -193,5 +198,5 @@ const userSlice = createSlice({
 
 })
 
-export const { increment, decrement, changeCount, setScore, setSelectedOutcome } = userSlice.actions
+export const { increment, decrement, changeCount, setScore, setSelectedOutcome, setSelectedMarketId } = userSlice.actions
 export const userReducer = userSlice.reducer

@@ -1,15 +1,16 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Event, Market } from '../types/event'
 import PieChartWithPaddingAngle from './pieChart'
 import { IoBookmark, IoBookmarkOutline } from "react-icons/io5";
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { userService } from '../services/user';
 import { setMsg } from '../store/slices/system.slice';
-import { updateUser } from '../store/slices/user.slice';
+import { setSelectedMarketId, setSelectedOutcome, updateUser } from '../store/slices/user.slice';
+import React from 'react';
 
 export function EventPreview({ event }: { event: Event }) {
     const dispatch = useAppDispatch()
-
+    const navigate = useNavigate()
     const mainMarket = event.markets?.[0]
     const isBinary = mainMarket?.outcomes.includes('Yes') || mainMarket?.outcomes.includes('Up')
     const isSingleMarket = event.markets.length === 1 && mainMarket
@@ -70,6 +71,12 @@ export function EventPreview({ event }: { event: Event }) {
         }
     }
 
+    function onAnswerClicked(ev: React.MouseEvent, idx: number, marketId: string) {
+        ev.stopPropagation()
+        dispatch(setSelectedOutcome(mainMarket.outcomes[idx]))
+        dispatch(setSelectedMarketId(marketId))
+        navigate(`/event/${event._id}`)
+    }
 
     // החלטה כמה מרקטים להציג: אם הראשון הוא ספורט, נציג רק 1. אחרת (פוליטיקה/קריפטו) נציג עד 5.
     const displayedMarkets = (mainMarket && isSportMarket(mainMarket))
@@ -105,14 +112,14 @@ export function EventPreview({ event }: { event: Event }) {
                     <div className="multi-options">
                         {displayedMarkets.map((market) => (
                             <div key={market.id} className="option flex space-between">
-                                <span className="option-name">{getUniqueName(market, event.markets)}</span>
+                                <span className="option-name" onClick={(ev) => onAnswerClicked(ev, 0, market.id)}>{getUniqueName(market, event.markets)}</span>
                                 <div className="market-btns flex">
                                     {market.outcomes.slice(0, 2).map((outcome, idx) => {
                                         const btnCls = getBtnClass(outcome)
                                         return (
                                             <div key={idx} className="btn-group flex">
                                                 {idx === 0 && <span className="price-label">{formatPrice(market.outcomePrices[idx])}</span>}
-                                                <button className={`action-btn ${btnCls}`}>
+                                                <button className={`action-btn ${btnCls}`} onClick={(ev) => onAnswerClicked(ev, idx, market.id)}>
                                                     <span className="btn-text">{outcome}</span>
                                                 </button>
                                             </div>
@@ -131,7 +138,7 @@ export function EventPreview({ event }: { event: Event }) {
                                 return (
                                     <div key={idx} className="btn-group justify-center">
                                         {isSport && <span className="btn-price">{formatPrice(mainMarket.outcomePrices[idx])}</span>}
-                                        <button className={`action-btn ${btnCls}`}>
+                                        <button className={`action-btn ${btnCls}`} onClick={(ev) => onAnswerClicked(ev, idx, mainMarket.id)}>
                                             <span className="btn-text">{outcome}</span>
                                         </button>
                                     </div>

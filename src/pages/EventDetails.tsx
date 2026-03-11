@@ -16,14 +16,14 @@ import { EventComment } from '../types/event'
 import { getAvatarStyle, timeAgo } from '../services/util.service'
 import * as Select from '@radix-ui/react-select'
 import { ChevronDownIcon } from '@radix-ui/react-icons'
-import { setSelectedOutcome } from '../store/slices/user.slice'
+import { setSelectedMarketId, setSelectedOutcome } from '../store/slices/user.slice'
 import { current } from '@reduxjs/toolkit'
 
 export function EventDetails() {
   const dispatch = useAppDispatch()
   const { eventId } = useParams()
   const { event } = useAppSelector((state) => state.eventModule)
-  const { user } = useAppSelector((state: RootState) => state.userModule)
+  const { user, selectedMarketId } = useAppSelector((state: RootState) => state.userModule)
   const { selectedOutcome } = useAppSelector((state: RootState) => state.userModule)
   const [activeMarket, setActiveMarket] = useState<Market | null>(null)
   const [chartData, setChartData] = useState<{ time: number, value: number }[]>([]);
@@ -34,7 +34,7 @@ export function EventDetails() {
   const [orderAmount, setOrderAmount] = useState<string>('')
   const [limitPrice, setLimitPrice] = useState<string>('')
   const [shares, setShares] = useState<number | ''>()
-
+  let isSport = [activeMarket?.outcomes[0]?.toLowerCase(), activeMarket?.outcomes[1]?.toLowerCase()].every(outcome => !['yes', 'no', 'up', 'down'].includes(outcome || ''))
   useEffect(() => {
     if (activeMarket && activeMarket.clobTokenIds) {
       // שליחת הטוקן הראשון מהמערך
@@ -48,8 +48,10 @@ export function EventDetails() {
   }, [activeMarket, timeframe]);
 
   useEffect(() => {
+
     return () => {
       dispatch(setSelectedOutcome(''))
+      dispatch(setSelectedMarketId(null))
     }
   }, [])
 
@@ -60,7 +62,8 @@ export function EventDetails() {
 
   useEffect(() => {
     if (event && event.markets.length > 0) {
-      setActiveMarket(event.markets[0])
+      if (!selectedMarketId) setActiveMarket(event.markets[0])
+      else setActiveMarket(event.markets.find(m => m.id === selectedMarketId) || event.markets[0])
       loadComments()
     }
   }, [event])
@@ -134,8 +137,12 @@ export function EventDetails() {
     if (currentPrice > 100) currentPrice = 100
     setLimitPrice(currentPrice.toString())
   }
+  console.log(selectedOutcome)
+  let selectedOutcomeIndex = selectedOutcome === 'Yes' ? 0 : selectedOutcome === 'No' ? 1 : null;
+  if (selectedOutcomeIndex === null) {
+    selectedOutcomeIndex = activeMarket?.outcomes.findIndex(outcome => outcome.toLowerCase() === selectedOutcome.toLowerCase()) ?? null;
 
-  const selectedOutcomeIndex = selectedOutcome === 'Yes' ? 0 : selectedOutcome === 'No' ? 1 : null;
+  }
   const price = selectedOutcomeIndex !== null && activeMarket?.outcomePrices[selectedOutcomeIndex]
     ? activeMarket.outcomePrices[selectedOutcomeIndex] / 100
     : 0;
@@ -269,8 +276,8 @@ export function EventDetails() {
 
         <main>
           <div className="trading-buttons flex">
-            <button className={`trading-button yes ${selectedOutcome === 'Yes' ? "active" : ""}`} onClick={() => dispatch(setSelectedOutcome('Yes'))}>{activeMarket?.outcomes[0]} {activeMarket?.outcomePrices[0]}¢</button>
-            <button className={`trading-button no ${selectedOutcome === 'No' ? "active" : ""}`} onClick={() => dispatch(setSelectedOutcome('No'))}>{activeMarket?.outcomes[1]} {activeMarket?.outcomePrices[1]}¢</button>
+            <button className={`trading-button yes ${selectedOutcomeIndex === 0 ? "active" : ""} ${isSport ? "sport" : ""} `} onClick={() => dispatch(setSelectedOutcome('Yes'))}>{activeMarket?.outcomes[0]} <span>{activeMarket?.outcomePrices[0]}¢</span></button>
+            <button className={`trading-button no ${selectedOutcomeIndex === 1 ? "active" : ""} ${isSport ? "sport" : ""}`} onClick={() => dispatch(setSelectedOutcome('No'))}>{activeMarket?.outcomes[1]} <span>{activeMarket?.outcomePrices[1]}¢</span></button>
           </div>
           {tradingMethod === 'market' ? (
             <>
@@ -378,7 +385,7 @@ export function EventDetails() {
             (<div className="signup-link">Deposit</div>)
             :
             (<div className="button-wrapper">
-              <button className="place-order-btn">{`${user ? `${tradingDirection === 'buy' ? 'Buy' : 'Sell'}` : ''} ${user ? selectedOutcome : 'Trade'}`} </button>
+              <button className="place-order-btn">{`${user ? `${tradingDirection === 'buy' ? 'Buy' : 'Sell'}` : ''} ${user ? activeMarket?.outcomes[selectedOutcomeIndex] : 'Trade'}`} </button>
             </div>)
           }
 

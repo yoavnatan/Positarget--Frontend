@@ -301,23 +301,67 @@
 
         .trading-button.yes.active {
             background-color: var(--button-green-hover);
-            color: var(--pt-white);
+            color: var(--gray-text-button);
+
+            span {
+                color: var(--pt-white);
+            }
+
+
         }
 
         .trading-button {
             background-color: var(--input-gray);
             color: var(--pt-gray);
+
         }
 
         .trading-button.no.active {
             background-color: var(--button-red-hover);
             color: var(--pt-white);
 
+            span {
+                color: var(--pt-white);
+            }
         }
 
         .trading-button:hover:not(.active) {
             background-color: var(--pt-gray-lighter);
             color: var(--pt-gray-light);
+        }
+
+        .trading-button.no.sport {
+            background-color: var(--sport-button-orange);
+            color: var(--sport-button-orange-hover);
+
+            &:hover {
+                background-color: var(--sport-button-orange-hover);
+                color: var(--pt-gray-lighter);
+
+
+            }
+
+            &.active {
+                background-color: var(--sport-button-orange-hover);
+                color: var(--pt-gray-lighter);
+            }
+        }
+
+        .trading-button.yes.sport {
+            background-color: var(--sport-button-blue);
+            color: var(--sport-button-blue-hover);
+
+            &:hover {
+                background-color: var(--sport-button-blue-hover);
+                color: var(--pt-gray-light);
+
+            }
+
+            &.active {
+                background-color: var(--sport-button-blue-hover);
+                color: var(--pt-gray-light);
+
+            }
         }
 
     }

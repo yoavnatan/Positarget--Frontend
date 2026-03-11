@@ -3,6 +3,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import { eventService } from '../../services/event'
 import { FilterBy, Event } from '../../types/event'
 import { setSelectedOutcome } from './user.slice';
+import { RootState } from '../store';
 
 export const loadEvents = createAsyncThunk<
     { events: Event[]; page: number }, // מחזיר גם את העמוד כדי שנדע מה לעשות ב-Reducer
@@ -15,16 +16,23 @@ export const loadEvents = createAsyncThunk<
         return { events, page }
     }
 )
-
 export const loadEvent = createAsyncThunk<Event, string>(
     'event/loadEvent',
-    async (eventId: string, { dispatch }): Promise<Event> => {
+    async (eventId: string, { dispatch, getState }): Promise<Event> => {
         const event = await eventService.fetchEventById(eventId) as Event
 
-        dispatch(setSelectedOutcome("Yes")) // משנה state ב-user slice
+        // חילוץ ה-State הנוכחי
+        const state = getState() as RootState
+        const currentOutcome = state.userModule.selectedOutcome
+
+        // התניה: בצע דיספאץ' רק אם הסטייט ריק
+        if (!currentOutcome || currentOutcome === '') {
+            dispatch(setSelectedOutcome("Yes"))
+        }
 
         return event
-    })
+    }
+)
 
 export const removeEvent = createAsyncThunk('event/removeEvent', async (eventId: string) => {
     await eventService.remove(eventId)

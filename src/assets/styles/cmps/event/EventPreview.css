@@ -41,6 +41,11 @@
         color: var(--text-main);
         overflow: visible;
         /* word-break: break-word; */
+
+        &:hover {
+            cursor: pointer;
+            text-decoration: underline;
+        }
     }
 
     .odds {
@@ -92,6 +97,11 @@
 
     .option-name {
         font-family: izmir;
+
+        &:hover {
+            cursor: pointer;
+            text-decoration: underline;
+        }
     }
 
 
