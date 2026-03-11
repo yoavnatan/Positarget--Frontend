@@ -5,6 +5,7 @@ import Center from '../assets/svg/center.svg?react'
 import { RootState, useAppDispatch, useAppSelector } from "../store/store";
 import { setSelectedOutcome } from "../store/slices/user.slice";
 import { eventService } from "../services/event";
+const isInitialLoad = useRef(false);
 
 export function OrderBook(market: Market) {
     const dispatch = useAppDispatch()
@@ -28,6 +29,7 @@ export function OrderBook(market: Market) {
         if (!market?.clobTokenIds?.length) return;
 
         const loadOrderBooks = async () => {
+            isInitialLoad.current = true;
             try {
                 setHasNoBook(false);
                 const books = await Promise.all(
@@ -63,6 +65,8 @@ export function OrderBook(market: Market) {
     // גלול לאמצע אוטומטית כשנתונים חדשים נטענים
     useEffect(() => {
         if (!asks.length && !bids.length) return;
+        if (!isInitialLoad.current) return; // ← אם זה עדכון מסוקט — לא גולל
+        isInitialLoad.current = false; // ← אפס אחרי הגלילה הראשונה
 
         const table = tableRef.current;
         if (!table) return;
