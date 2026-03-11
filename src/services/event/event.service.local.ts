@@ -8,7 +8,7 @@ declare global {
 import { storageService } from '../async-storage.service'
 import { makeId, saveToStorage } from '../util.service'
 import { userService } from '../user'
-import { FilterBy, Event, Market, EventComment } from '../../types/event';
+import { FilterBy, Event, Market, EventComment, OrderbookLevel, Orderbook, PolyOrderbookResponse, PolyOrderbookLevel } from '../../types/event';
 import { polyImgs } from '../imgs';
 
 const STORAGE_KEY = 'event'
@@ -24,6 +24,7 @@ export const eventService = {
     fetchEventById,
     fetchMarketPriceHistory,
     getComments,
+    fetchOrderBook,
 }
 window.cs = eventService
 
@@ -33,7 +34,7 @@ async function query(filterBy: FilterBy, category: string = 'all', page: number 
     const sortBy = filterBy.sortField || 'volume'
     // שליחת ה-sortBy ל-fetchEvents
     var events: Event[] = await fetchEvents(category, page, sortBy)
-    console.log('Fetched events:', events)
+
     // סינון טקסטואלי מקומי רק אם המשתמש הזין טקסט בחיפוש
     if (filterBy.txt) {
         const regex = new RegExp(filterBy.txt, 'i')
@@ -228,7 +229,7 @@ export function getCategories(): string[] {
 
 // (async () => {
 //     const demoEvents = await fetchPolyeventData();
-//     console.log("Processed Events:", demoEvents);
+//     
 //     if (demoEvents.length > 0) {
 //         saveToStorage(STORAGE_KEY, demoEvents);
 //     }
@@ -380,7 +381,7 @@ export async function fetchEvents(categoryName?: string, page: number = 0, sortB
     }
 
     try {
-        console.log(`Fetching: ${url}`); // תוכל לראות ב-Console שה-URL נבנה נכון
+        // תוכל לראות ב-Console שה-URL נבנה נכון
         const res = await fetch(url);
         if (!res.ok) throw new Error(`API Error: ${res.status}`);
 
@@ -455,7 +456,7 @@ async function fetchMarketPriceHistory(clobTokenId: string, interval: string = '
     // שימוש ב-clobTokenId בתוך ה-URL
     if (!interval) interval = 'all';
     const url = `/poly-clob/prices-history?market=${clobTokenId}&interval=${interval}`;
-    console.log(url)
+
     try {
         const res = await fetch(url);
         if (!res.ok) throw new Error(`Status: ${res.status}`);
@@ -497,5 +498,40 @@ async function getComments(eventId: string): Promise<EventComment[]> {
     } catch (err) {
         console.error(`Error fetching comments for event ${eventId}:`, err);
         return [];
+    }
+}
+
+// Order Book
+
+async function fetchOrderBook(clobTokenId: string): Promise<Orderbook> {
+    const url = `/poly-clob/book?token_id=${clobTokenId}`;
+
+    try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Status: ${res.status}`);
+
+        const data: PolyOrderbookResponse = await res.json();
+
+        const processLevels = (levels: PolyOrderbookLevel[]): OrderbookLevel[] => {
+            let total = 0;
+            return (levels || []).map((level) => {
+                const size = parseFloat(level.size);
+                const price = parseFloat(level.price);
+                total += size;
+                return {
+                    price,
+                    size,
+                    total
+                };
+            });
+        };
+
+        return {
+            bids: processLevels(data.bids),
+            asks: processLevels(data.asks)
+        };
+    } catch (err) {
+        console.error("Orderbook fetch error:", err);
+        return { bids: [], asks: [] };
     }
 }

@@ -18,6 +18,7 @@ import * as Select from '@radix-ui/react-select'
 import { ChevronDownIcon } from '@radix-ui/react-icons'
 import { setSelectedMarketId, setSelectedOutcome } from '../store/slices/user.slice'
 import { current } from '@reduxjs/toolkit'
+import { OrderBook } from '../cmps/OrderBook'
 
 export function EventDetails() {
   const dispatch = useAppDispatch()
@@ -67,6 +68,8 @@ export function EventDetails() {
       loadComments()
     }
   }, [event])
+
+
 
   async function loadComments() {
     if (!event) return
@@ -131,13 +134,13 @@ export function EventDetails() {
   function handleLimit(change: number) {
     let currentPrice = parseFloat(limitPrice) || 0
     currentPrice += (0.1 * change)
-    console.log(currentPrice)
+
     currentPrice = Math.round(currentPrice * 10) / 10
     if (currentPrice < 0) currentPrice = 0
     if (currentPrice > 100) currentPrice = 100
     setLimitPrice(currentPrice.toString())
   }
-  console.log(selectedOutcome)
+
   let selectedOutcomeIndex = selectedOutcome === 'Yes' ? 0 : selectedOutcome === 'No' ? 1 : null;
   if (selectedOutcomeIndex === null) {
     selectedOutcomeIndex = activeMarket?.outcomes.findIndex(outcome => outcome.toLowerCase() === selectedOutcome.toLowerCase()) ?? null;
@@ -147,6 +150,8 @@ export function EventDetails() {
     ? activeMarket.outcomePrices[selectedOutcomeIndex] / 100
     : 0;
   const toWin = price > 0 ? (+orderAmount / price).toFixed(2) : '0';
+
+  console.log(activeMarket)
   return (
     <div className="event-details-page flex">
       <section className="event-details container">
@@ -200,6 +205,7 @@ export function EventDetails() {
             </div>
           </div>
 
+          {activeMarket && <OrderBook {...activeMarket} />}
           <div className="comments-section">
             <h3>Comments ({comments.length})</h3>
 
@@ -385,7 +391,7 @@ export function EventDetails() {
             (<div className="signup-link">Deposit</div>)
             :
             (<div className="button-wrapper">
-              <button className="place-order-btn">{`${user ? `${tradingDirection === 'buy' ? 'Buy' : 'Sell'}` : ''} ${user ? activeMarket?.outcomes[selectedOutcomeIndex] : 'Trade'}`} </button>
+              <button className="place-order-btn">{`${user ? `${tradingDirection === 'buy' ? 'Buy' : 'Sell'}` : ''} ${user && selectedOutcomeIndex !== null ? activeMarket?.outcomes[selectedOutcomeIndex] : 'Trade'}`} </button>
             </div>)
           }
 

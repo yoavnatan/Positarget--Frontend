@@ -142,7 +142,7 @@ const userSlice = createSlice({
             })
             .addCase(login.rejected, (state) => {
                 state.user = null
-                console.log('not logged in')
+
             }
             )
 

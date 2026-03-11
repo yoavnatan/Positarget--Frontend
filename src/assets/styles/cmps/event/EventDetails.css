@@ -620,7 +620,7 @@
     }
 }
 
-.shares {
+.event-details.shares {
     justify-content: space-between;
     align-items: center;
     margin: 1.5em;

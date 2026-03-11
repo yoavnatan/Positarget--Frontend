@@ -14,7 +14,7 @@ export async function convertToUsdc(coin: string, amount: number): Promise<numbe
     const now = Date.now();
     const cachedItem = cache[symbol];
 
-    console.log(`Converting ${amount} ${symbol} to USDC...`);
+
 
     if (amount === 0) return 0;
 

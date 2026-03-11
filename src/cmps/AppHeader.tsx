@@ -116,7 +116,7 @@ export function AppHeader() {
 		try {
 
 			await dispatch(updateUserCash(convertedAmount)).unwrap()
-			console.log('Depositing:', convertedAmount)
+
 			dispatch(setIsModalShown(false))
 			dispatch(setMsg({ txt: `Successfully deposited $${convertedAmount}`, type: 'success' }))
 		} catch (err) {
@@ -126,8 +126,8 @@ export function AppHeader() {
 
 	async function onConvertCurrency() {
 		const converted = await convertToUsdc(depositFields.currency, depositFields.amount)
-		console.log(converted)
-		console.log(`Converted amount for${depositFields.currency} in USDC:`, converted)
+
+
 		if (converted >= 0) setConvertedAmount(converted)
 	}
 

@@ -23,7 +23,7 @@ export function LoginSignup() {
             dispatch(setMsg({ txt: 'Logged in successfully', type: 'success' }))
             navigate('/')
         } catch (err) {
-            console.log(err)
+
             dispatch(setMsg({ txt: 'Failed to login', type: 'error' }))
 
         }
@@ -38,7 +38,7 @@ export function LoginSignup() {
 
             })
             .catch((err) => {
-                console.log(err)
+
                 dispatch(setMsg({ txt: 'Failed to sign-up', type: 'error' }))
             })
     }

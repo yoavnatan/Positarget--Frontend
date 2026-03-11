@@ -1,4 +1,4 @@
-import { Event, EventComment, Market } from '../../types/event'
+import { Event, EventComment, Market, Orderbook, OrderbookLevel, PolyOrderbookLevel, PolyOrderbookResponse } from '../../types/event'
 import { httpService } from '../http.service'
 
 export const eventService = {
@@ -12,6 +12,7 @@ export const eventService = {
     fetchEventById,
     fetchMarketPriceHistory,
     getComments,
+    fetchOrderBook,
 }
 
 async function query(filterBy = { txt: '' }) {
@@ -227,7 +228,7 @@ export async function fetchEvents(categoryName?: string, page: number = 0, sortB
     }
 
     try {
-        console.log(`Fetching: ${url}`); // תוכל לראות ב-Console שה-URL נבנה נכון
+        // תוכל לראות ב-Console שה-URL נבנה נכון
         const res = await fetch(url);
         if (!res.ok) throw new Error(`API Error: ${res.status}`);
 
@@ -331,5 +332,41 @@ async function getComments(eventId: string): Promise<EventComment[] | []> {
     } catch (err) {
         console.error(`Error fetching comments for event ${eventId}:`, err);
         return [];
+    }
+}
+
+
+// Order Book
+async function fetchOrderBook(clobTokenId: string): Promise<Orderbook> {
+    const url = `/poly-clob/book?token_id=${clobTokenId}`;
+
+    try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Status: ${res.status}`);
+
+        // הגדרת הטיפוס על התשובה שחוזרת מה-JSON
+        const data: PolyOrderbookResponse = await res.json();
+
+        const processLevels = (levels: PolyOrderbookLevel[]): OrderbookLevel[] => {
+            let total = 0;
+            return (levels || []).map((level) => {
+                const size = parseFloat(level.size);
+                const price = parseFloat(level.price);
+                total += size;
+                return {
+                    price,
+                    size,
+                    total
+                };
+            });
+        };
+
+        return {
+            bids: processLevels(data.bids),
+            asks: processLevels(data.asks)
+        };
+    } catch (err) {
+        console.error("Orderbook fetch error:", err);
+        return { bids: [], asks: [] };
     }
 }

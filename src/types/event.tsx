@@ -50,3 +50,26 @@ export interface EventComment {
     txt: string;
     createdAt: number;
 }
+// המבנה שחוזר מה-API של Polymarket
+export interface PolyOrderbookLevel {
+    price: string; // ה-API מחזיר מחרוזת
+    size: string;  // ה-API מחזיר מחרוזת
+}
+
+export interface PolyOrderbookResponse {
+    bids: PolyOrderbookLevel[];
+    asks: PolyOrderbookLevel[];
+    hash: string;
+}
+
+// המבנה המנורמל שאנחנו רוצים לעבוד איתו באפליקציה
+export interface OrderbookLevel {
+    price: number;
+    size: number;
+    total: number;
+}
+
+export interface Orderbook {
+    bids: OrderbookLevel[];
+    asks: OrderbookLevel[];
+}

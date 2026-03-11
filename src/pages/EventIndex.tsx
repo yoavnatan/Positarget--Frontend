@@ -23,7 +23,6 @@ export function EventIndex() {
     const [eventsToShow, setEventsToShow] = useState<Event[]>([])
 
     useEffect(() => {
-        console.log(filterBy)
         setIsAutoLoad(false)
         setPage(0)
         setAutoLoadCount(0)
@@ -35,9 +34,9 @@ export function EventIndex() {
 
         let filteredEvents = events
         if (filterBy.txt !== '') {
-            console.log(filterBy.txt)
+
             filteredEvents = events.filter(ev => ev.title.toLowerCase().includes(filterBy.txt.toLowerCase()))
-            console.log(filteredEvents)
+
         }
         if (filterBy.labels.length > 0) {
             filteredEvents = filteredEvents.filter(ev => filterBy.labels.some(label => ev.labels.includes(label)))
@@ -111,7 +110,7 @@ export function EventIndex() {
         })
         if (node) observer.current.observe(node)
     }, [isLoading, isAutoLoad, hasMore, dispatch, filterBy, categorie])
-    console.log(events)
+
     return (
         <section className="event-index">
             {(isLoading && page === 0) && <TopLoader />}

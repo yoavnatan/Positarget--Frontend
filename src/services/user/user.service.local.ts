@@ -68,7 +68,7 @@ async function signup(userCred: UserCred) {
         email: userCred.email || '' // Ensure email is always defined
     }
     const user = await storageService.post('user', userToSave)
-    console.log(user)
+
     return saveLoggedinUser(user)
 }
 
@@ -104,7 +104,7 @@ async function _createAdmin() {
     }
 
     const newUser = await storageService.post('user', user)
-    console.log('newUser: ', newUser)
+
 }
 
 function getEmptyCredentials() {

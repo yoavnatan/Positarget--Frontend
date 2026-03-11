@@ -70,7 +70,7 @@ export function Search() {
     }, [searchParams]);
 
     useEffect(() => {
-        console.log('Filtering by:', sortBy);
+
         if (sortBy === "Volume") {
             setSearchResults(prev => [...prev].sort((a, b) => b.volume - a.volume));
         } else if (sortBy === "Newest") {
@@ -140,7 +140,7 @@ export function Search() {
         navigate(`/search?${newParams.toString()}`);
     }
 
-    console.log(searchResults)
+
 
     return (
         <section className="search-page">

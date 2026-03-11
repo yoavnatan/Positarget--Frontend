@@ -1,0 +1,173 @@
+.order-book.container {
+    margin-block: 1em;
+    border: 1px solid var(--border-gray);
+    border-radius: 15.2px;
+    overflow: hidden;
+    width: 99%;
+
+
+    .order-book-header {
+        justify-content: space-between;
+        align-items: center;
+        padding: 1em;
+        cursor: pointer;
+        border-radius: 15.2px;
+
+        &:hover {
+            background-color: var(--input-gray);
+        }
+
+        .order-book-title {
+            font-size: 1.1em;
+            margin-bottom: 4px;
+        }
+
+        .btn-toggle {
+            transform: scale(1.2);
+            transition: transform .4s;
+
+        }
+
+        .arrow {
+            transition: transform .4s;
+        }
+
+        .arrow.open {
+            transform: rotate(-180deg);
+        }
+
+    }
+
+    &.open .order-book-header {
+        border-bottom: 1px solid var(--border-gray);
+        border-bottom-right-radius: 0;
+        border-bottom-left-radius: 0;
+    }
+
+    .inner-selector {
+        padding: 1em;
+        font-size: .8em;
+        font-family: izmir-semibold, sans-serif;
+        color: var(--pt-gray);
+        gap: 1em;
+
+        span {
+            cursor: pointer;
+        }
+
+        .active {
+            color: var(--pt-black2);
+        }
+    }
+
+    .table-header {
+        margin-top: 1em;
+        display: grid;
+        grid-template-columns: 40% 20% 20% 20%;
+        font-size: .7em;
+        font-family: izmir, sans-serif;
+        color: var(--pt-gray);
+        border-bottom: 1px solid var(--border-gray);
+
+        .uppercase {
+            margin-inline-start: 1em
+        }
+
+        .trade-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            .center-icon {
+                cursor: pointer;
+            }
+
+            .icon-wrapper {
+                width: 23px;
+                height: 23px;
+            }
+        }
+
+
+    }
+
+
+    /* Table */
+
+    .row {
+        display: grid;
+        grid-template-columns: 40% 20% 20% 20%;
+        font-size: 0.85rem;
+        height: 28px;
+
+    }
+
+    .side {
+        position: relative;
+        background-repeat: no-repeat;
+        background-position: left;
+        /* הבר מתחיל משמאל */
+        transition: background-size 0.3s ease-out;
+    }
+
+    /* צבעי הברים - הכיוון הוא לימין */
+    .side.sell {
+        background-image: linear-gradient(to right, rgba(255, 80, 80, 0.15), rgba(255, 80, 80, 0.15));
+    }
+
+    .side.buy {
+        background-image: linear-gradient(to right, rgba(56, 164, 30, 0.15), rgba(30, 166, 75, 0.15));
+    }
+
+    .side {
+        width: 100%;
+        font-size: 0.7rem;
+    }
+
+    .ask-row .price {
+        color: var(--button-red-hover);
+        /* margin-inline-start: 8px; */
+    }
+
+    .bid-row .price {
+        color: var(--button-green-hover);
+        /* margin-inline-start: 8px; */
+
+    }
+
+    .row .shares {
+        font-variant-numeric: tabular-nums;
+        font-family: izmir-light, sans-serif;
+
+    }
+
+    .total-in-row {
+        font-variant-numeric: tabular-nums;
+        font-family: izmir-light, sans-serif;
+
+    }
+
+    .order-book-table {
+        height: 320px;
+        overflow-y: auto;
+        position: relative;
+        /* קריטי! בלעדי זה offsetTop לא עובד נכון */
+        display: flex;
+        flex-direction: column;
+    }
+
+    .center-divider {
+        border-block: 1px solid var(--border-gray);
+        font-size: 0.8em;
+        color: var(--pt-gray);
+        padding: 0.6em;
+        position: sticky;
+        top: -1px;
+        bottom: -1px;
+        background-color: var(--pt-white);
+        display: flex;
+        justify-content: center;
+        z-index: 1;
+    }
+
+}
