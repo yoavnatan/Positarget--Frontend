@@ -7,6 +7,7 @@ export interface Market { // השוק הספציפי בתוך האירוע
     outcomes: string[];      // ["Yes", "No"]
     clobTokenIds: string[];
     conditionId: string;
+    description: string;
 }
 
 export interface Event { // זה ה"כרטיס" (Card) שלך
@@ -34,9 +35,11 @@ export type FilterBy = {
 }
 
 export interface Msg {
-    id: string;
+    _id: string;
     by: User;
     txt: string;
+    createdAt: number;
+    aboutEventId: string;
 }
 
 

@@ -14,7 +14,7 @@
         border-radius: 15.2px;
 
         &:hover {
-            background-color: var(--input-gray);
+            background-color: var(--pt-gray-lighter);
         }
 
         .order-book-title {
@@ -36,7 +36,22 @@
             transform: rotate(-180deg);
         }
 
+
+
     }
+
+    .inner-selector .icon-wrapper {
+        margin-inline-start: auto;
+        cursor: pointer;
+        width: 25px;
+        height: 25px;
+
+        .refresh-icon.loading {
+            rotate: 45deg;
+            color: var(--pt-gray)
+        }
+    }
+
 
     &.open .order-book-header {
         border-bottom: 1px solid var(--border-gray);
@@ -168,6 +183,26 @@
         display: flex;
         justify-content: center;
         z-index: 1;
+        display: grid;
+        grid-template-columns: 40% 20% 20% 20%;
+        ;
+
+    }
+
+    .center-divider:first-child {
+        text-align: start;
+    }
+
+    .order-book-main {
+        /* display: none; */
+        height: 0;
+        transition: 0.2s ease-out;
+    }
+
+    &.open .order-book-main {
+        /* display: block; */
+        /* height: 500px; */
+        height: 397px;
     }
 
 }

@@ -8,7 +8,7 @@ declare global {
 import { storageService } from '../async-storage.service'
 import { makeId, saveToStorage } from '../util.service'
 import { userService } from '../user'
-import { FilterBy, Event, Market, EventComment, OrderbookLevel, Orderbook, PolyOrderbookResponse, PolyOrderbookLevel } from '../../types/event';
+import { FilterBy, Event, Market, EventComment, OrderbookLevel, Orderbook, PolyOrderbookResponse, PolyOrderbookLevel, Msg } from '../../types/event';
 import { polyImgs } from '../imgs';
 
 const STORAGE_KEY = 'event'
@@ -25,7 +25,9 @@ export const eventService = {
     fetchMarketPriceHistory,
     getComments,
     fetchOrderBook,
+    deleteEventMsg,
 }
+
 window.cs = eventService
 
 
@@ -109,17 +111,26 @@ function save(event: Event) {
 
 async function addEventMsg(eventId: string, txt: string) {
     // Later, this is all done by the backend
-    const event = await getById(eventId)
-
-    const msg = {
-        id: makeId(),
+    const msg: Msg = {
+        _id: makeId(),
         by: userService.getLoggedinUser(),
-        txt
+        txt,
+        aboutEventId: eventId,
+        createdAt: Date.now()
     }
-    event.msgs.push(msg)
-    await storageService.put(STORAGE_KEY, event)
-
+    await storageService.post('comments', msg)
+    console.log(msg)
     return msg
+}
+
+async function deleteEventMsg(msgId: string) {
+    try {
+        await storageService.remove('comments', msgId)
+        console.log(`Message with ID ${msgId} deleted successfully.`)
+    } catch (err) {
+        console.error(`Failed to delete message with ID ${msgId}:`, err)
+        throw err
+    }
 }
 
 //Demo Data
@@ -320,7 +331,7 @@ function processRawEvents(combined: any[]): Event[] {
                 outcomes: ["Yes", "No"],
                 outcomePrices: [50, 50],
                 clobTokenIds: []
-            } as Market);
+            } as unknown as Market);
         }
 
         const eventTags: string[] = Array.isArray(ev.tags)
@@ -494,7 +505,12 @@ async function getComments(eventId: string): Promise<EventComment[]> {
 
         // Polymarket מחזירים לפעמים מערך ישיר ולפעמים אובייקט עם שדה comments
         const comments = Array.isArray(data) ? data : (data.comments || []);
-        return comments;
+        const msgs = localStorage.getItem('comments') || '[]'
+        console.log(msgs)
+        const localComments = JSON.parse(msgs).filter((msg: any) => msg.aboutEventId === eventId)
+        console.log(eventId)
+        console.log(localComments)
+        return [...localComments, ...comments];
     } catch (err) {
         console.error(`Error fetching comments for event ${eventId}:`, err);
         return [];

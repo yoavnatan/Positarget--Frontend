@@ -3,13 +3,13 @@ import { useParams } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import Money from '../assets/svg/money.svg?react'
-
+import Delete from '../assets/svg/delete.svg?react'
 import { useAppDispatch, useAppSelector } from '../store/store'
 import { RootState } from '../store/store'
 import { setMsg } from '../store/slices/system.slice'
 import { loadEvent } from '../store/slices/event.slice'
 import { eventService } from '../services/event'
-import { Market } from '../types/event'
+import { Market, Msg } from '../types/event'
 import { PriceChart } from '../cmps/PriceChart'
 import { time } from 'console'
 import { EventComment } from '../types/event'
@@ -19,6 +19,7 @@ import { ChevronDownIcon } from '@radix-ui/react-icons'
 import { setSelectedMarketId, setSelectedOutcome } from '../store/slices/user.slice'
 import { current } from '@reduxjs/toolkit'
 import { OrderBook } from '../cmps/OrderBook'
+import { LongTxt } from '../cmps/LongTxt'
 
 export function EventDetails() {
   const dispatch = useAppDispatch()
@@ -29,7 +30,9 @@ export function EventDetails() {
   const [activeMarket, setActiveMarket] = useState<Market | null>(null)
   const [chartData, setChartData] = useState<{ time: number, value: number }[]>([]);
   const [timeframe, setTimeframe] = useState('all')
-  const [comments, setComments] = useState<EventComment[] | []>([])
+  const [comments, setComments] = useState<(EventComment | Msg)[] | []>([])
+  const [msgs, setMsgs] = useState<Msg[]>([])
+  const [newMsg, setNewMsg] = useState('')
   const [tradingMethod, setTradingMethod] = useState<'market' | 'limit'>('market')
   const [tradingDirection, setTradingDirection] = useState<'buy' | 'sell'>('buy')
   const [orderAmount, setOrderAmount] = useState<string>('')
@@ -141,6 +144,20 @@ export function EventDetails() {
     setLimitPrice(currentPrice.toString())
   }
 
+  async function onDeleteMsg(msgId: string) {
+    try {
+      console.log(msgId)
+      await eventService.deleteEventMsg(msgId)
+      setComments((comments) => comments.filter(c => {
+        if ('_id' in c) return c._id !== msgId;
+        return true;
+      }))
+      dispatch(setMsg({ txt: 'Comment deleted', type: 'success' }))
+    } catch (err) {
+      dispatch(setMsg({ txt: 'Cannot delete comment', type: 'error' }))
+    }
+  }
+
   let selectedOutcomeIndex = selectedOutcome === 'Yes' ? 0 : selectedOutcome === 'No' ? 1 : null;
   if (selectedOutcomeIndex === null) {
     selectedOutcomeIndex = activeMarket?.outcomes.findIndex(outcome => outcome.toLowerCase() === selectedOutcome.toLowerCase()) ?? null;
@@ -151,7 +168,7 @@ export function EventDetails() {
     : 0;
   const toWin = price > 0 ? (+orderAmount / price).toFixed(2) : '0';
 
-  console.log(activeMarket)
+  // console.log(activeMarket)
   return (
     <div className="event-details-page flex">
       <section className="event-details container">
@@ -206,14 +223,44 @@ export function EventDetails() {
           </div>
 
           {activeMarket && <OrderBook {...activeMarket} />}
+          {activeMarket && <div className='market-description'>
+            <h3>Rules</h3>
+            <LongTxt txt={activeMarket?.description} />
+          </div>}
           <div className="comments-section">
-            <h3>Comments ({comments.length})</h3>
 
+            <h3>Comments ({comments.length})</h3>
+            <div className="add-comment">
+              <input
+                type="text"
+                placeholder="Add a comment..."
+                value={newMsg}
+                onChange={(e) => setNewMsg(e.currentTarget.value)}
+                onKeyDown={async (e) => {
+                  if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                    const newComment = newMsg;
+                    try {
+                      if (event) {
+                        const msg: Msg = await eventService.addEventMsg(event._id, newComment);
+                        setComments((comments) => [
+                          msg, ...comments
+                        ]);
+                        setNewMsg('')
+                      }
+                    } catch (err) {
+                      console.log(err)
+                      dispatch(setMsg({ txt: 'Cannot add comment', type: 'error' }));
+                    }
+                  }
+                }}
+              />
+              <button className="signup-link" disabled={!newMsg}>Post</button>
+            </div>
             <div className="comments-list">
               {comments.length > 0 ? (
                 comments.map((comment: any) => {
                   // חילוץ המזהה הייחודי לאוואטר
-                  const avatarId = comment.proxy_wallet || comment.id || 'guest'
+                  const avatarId = comment.proxy_wallet || comment.id || comment.by._id
 
                   return (
                     <div key={comment.id} className="comment-card flex">
@@ -225,12 +272,16 @@ export function EventDetails() {
 
                       <div className="comment-content">
                         <div className="comment-header flex">
-                          <span className="user-name">{comment.profile.name}</span>
+                          <span className="user-name">{comment.profile?.name || comment.by.username}</span>
                           <span className="comment-date">
                             {timeAgo(comment.createdAt)}
                           </span>
+                          {comment.by?._id && (user?._id === comment.by._id || user?.isAdmin) && <Delete className="delete-icon" onClick={() =>
+                            onDeleteMsg(comment._id)
+                          } />}
                         </div>
-                        <p className="comment-text">{comment.body}</p>
+                        <p className="comment-text">{comment?.body || comment.txt}</p>
+
                       </div>
                     </div>
                   )

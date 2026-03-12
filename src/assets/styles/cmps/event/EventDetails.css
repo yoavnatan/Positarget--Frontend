@@ -144,6 +144,7 @@
     color: var(--pt-gray);
 
     .buttons {
+        margin-inline-end: 1em;
         cursor: pointer;
         display: flex;
         gap: 1em;
@@ -210,7 +211,8 @@
     flex-grow: 1;
 
     .comment-header {
-        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
         margin-bottom: 4px;
 
         .user-name {
@@ -620,7 +622,7 @@
     }
 }
 
-.event-details.shares {
+.trading-section .shares {
     justify-content: space-between;
     align-items: center;
     margin: 1.5em;
@@ -669,4 +671,56 @@
 
 .money-icon.limit {
     translate: 0px -1px;
+}
+
+.long-txt {
+    font-family: izmir-light;
+    line-height: 1.5;
+    font-size: .85em;
+
+    button {
+        margin: 0 1em 0 0;
+        padding: 0;
+        color: var(--pt-gray);
+    }
+}
+
+.comment-content .delete-icon {
+    cursor: pointer;
+    color: var(--pt-gray);
+    translate: 0px 2px;
+    margin-inline-start: auto;
+
+}
+
+.comment-content p {
+    margin-right: 20px;
+
+}
+
+.add-comment {
+    position: relative;
+    margin-bottom: 1.5em;
+
+    button {
+        font-family: izmir-medium;
+        position: absolute;
+        right: 3px;
+        /* height: 37px; */
+        padding: .4em .8em .6em .8em;
+        font-size: 1em;
+    }
+
+    button:disabled {
+        cursor: auto;
+        background-color: var(--faded-blue);
+    }
+}
+
+.add-comment input {
+    width: 100%;
+    border: 1px solid var(--border-gray);
+    border-radius: 9.2px;
+    padding: 1em;
+    font-size: 1em;
 }

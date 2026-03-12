@@ -1,4 +1,4 @@
-import { Event, EventComment, Market, Orderbook, OrderbookLevel, PolyOrderbookLevel, PolyOrderbookResponse } from '../../types/event'
+import { Event, EventComment, Market, Msg, Orderbook, OrderbookLevel, PolyOrderbookLevel, PolyOrderbookResponse } from '../../types/event'
 import { httpService } from '../http.service'
 
 export const eventService = {
@@ -13,6 +13,7 @@ export const eventService = {
     fetchMarketPriceHistory,
     getComments,
     fetchOrderBook,
+    deleteEventMsg,
 }
 
 async function query(filterBy = { txt: '' }) {
@@ -80,8 +81,16 @@ async function save(event: Event) {
 }
 
 async function addEventMsg(eventId: string, txt: string) {
-    const savedMsg = await httpService.post(`event/${eventId}/msg`, { txt })
+    const savedMsg: Msg = await httpService.post(`msgs/${eventId}/msg`, { txt })
     return savedMsg
+}
+
+async function deleteEventMsg(msgId: string) {
+    try {
+        await httpService.delete(`msgs/${msgId}`);
+    } catch (err) {
+        console.error(`Failed to delete message ${msgId}`, err);
+    }
 }
 
 const categories = [
@@ -166,8 +175,8 @@ function processRawEvents(combined: any[]): Event[] {
                 question: ev.title,
                 outcomes: ["Yes", "No"],
                 outcomePrices: [50, 50],
-                clobTokenIds: []
-            } as Market);
+                clobTokenIds: [],
+            } as unknown as Market);
         }
 
         const eventTags: string[] = Array.isArray(ev.tags)

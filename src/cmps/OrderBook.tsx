@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { Market, OrderbookLevel } from "../types/event";
 import Arrow from '../assets/svg/drop-arrow.svg?react'
 import Center from '../assets/svg/center.svg?react'
+import Refresh from '../assets/svg/refresh.svg?react'
 import { RootState, useAppDispatch, useAppSelector } from "../store/store";
 import { setSelectedOutcome } from "../store/slices/user.slice";
 import { eventService } from "../services/event";
-const isInitialLoad = useRef(false);
 
 export function OrderBook(market: Market) {
     const dispatch = useAppDispatch()
@@ -16,7 +16,8 @@ export function OrderBook(market: Market) {
     const spreadRef = useRef<HTMLDivElement>(null);
     const tableRef = useRef<HTMLDivElement>(null);
     const displayedAsksRef = useRef<OrderbookLevel[]>([]);
-
+    const isInitialLoad = useRef(false);
+    const [isLoading, setIsLoading] = useState(false);
     const { selectedOutcome } = useAppSelector((state: RootState) => state.userModule)
 
     let selectedOutcomeIndex = selectedOutcome === 'Yes' ? 0 : selectedOutcome === 'No' ? 1 : null;
@@ -25,43 +26,39 @@ export function OrderBook(market: Market) {
     }
 
     useEffect(() => {
-        let isMounted = true;
         if (!market?.clobTokenIds?.length) return;
-
-        const loadOrderBooks = async () => {
-            isInitialLoad.current = true;
-            try {
-                setHasNoBook(false);
-                const books = await Promise.all(
-                    market.clobTokenIds.map(id => eventService.fetchOrderBook(id))
-                );
-
-                if (!isMounted) return;
-
-                const currentBook = books[selectedOutcomeIndex ?? 0];
-
-                if (!currentBook || (currentBook as any).error || (!currentBook.asks?.length && !currentBook.bids?.length)) {
-                    setHasNoBook(true);
-                    setAsks([]);
-                    setBids([]);
-                    return;
-                }
-
-                setAsks(currentBook.asks || []);
-                setBids(currentBook.bids || []);
-            } catch (err) {
-                if (isMounted) {
-                    setHasNoBook(true);
-                    console.error('Fetch failed');
-                }
-            }
-        };
-
         loadOrderBooks();
-
-        return () => { isMounted = false };
     }, [market.id, selectedOutcomeIndex]);
 
+
+    async function loadOrderBooks() {
+        setIsLoading(true)
+        isInitialLoad.current = true;
+        try {
+            setHasNoBook(false);
+            const books = await Promise.all(
+                market.clobTokenIds.map(id => eventService.fetchOrderBook(id))
+            );
+
+
+            const currentBook = books[selectedOutcomeIndex ?? 0];
+
+            if (!currentBook || (currentBook as any).error || (!currentBook.asks?.length && !currentBook.bids?.length)) {
+                setHasNoBook(true);
+                setAsks([]);
+                setBids([]);
+                return;
+            }
+
+            setAsks(currentBook.asks || []);
+            setBids(currentBook.bids || []);
+            setIsLoading(false);
+        } catch (err) {
+            setHasNoBook(true);
+            console.error('Fetch failed');
+
+        }
+    };
     // גלול לאמצע אוטומטית כשנתונים חדשים נטענים
     useEffect(() => {
         if (!asks.length && !bids.length) return;
@@ -110,7 +107,7 @@ export function OrderBook(market: Market) {
         ...displayedBids.map(b => b.total),
         1
     );
-
+    console.log(market)
     return (
         <section className={`order-book container ${isBookOpen ? 'open' : ''}`}>
             <header className="order-book-header flex" onClick={() => setIsBookOpen(prev => !prev)}>
@@ -119,7 +116,7 @@ export function OrderBook(market: Market) {
                     <Arrow className={`arrow ${isBookOpen ? 'open' : ''}`} />
                 </div>
             </header>
-            <main>
+            <main className={`order-book-main ${isBookOpen ? 'open' : ''}`}>
                 <div className="inner-header">
                     <div className="inner-selector flex">
                         <span
@@ -134,6 +131,11 @@ export function OrderBook(market: Market) {
                         >
                             Trade {market.outcomes[1]}
                         </span>
+                        <div className="icon-wrapper">
+                            <Refresh className={`refresh-icon ${isLoading ? "loading" : ''}`} onClick={
+                                () => { loadOrderBooks() }
+                            } />
+                        </div>
                     </div>
 
                     <div className="table-header">
@@ -171,6 +173,7 @@ export function OrderBook(market: Market) {
                                 </div>
 
                                 <div className="center-divider" ref={spreadRef}>
+                                    <span>Last: {market.outcomePrices[selectedOutcomeIndex]}¢ </span>
                                     <span>Spread: {asks[0] && bids[0] ? ((asks[0].price - bids[0].price) * 100).toFixed(0) : 0}¢</span>
                                 </div>
 
