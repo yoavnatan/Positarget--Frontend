@@ -119,14 +119,14 @@ async function addEventMsg(eventId: string, txt: string) {
         createdAt: Date.now()
     }
     await storageService.post('comments', msg)
-    console.log(msg)
+
     return msg
 }
 
 async function deleteEventMsg(msgId: string) {
     try {
         await storageService.remove('comments', msgId)
-        console.log(`Message with ID ${msgId} deleted successfully.`)
+
     } catch (err) {
         console.error(`Failed to delete message with ID ${msgId}:`, err)
         throw err
@@ -506,10 +506,10 @@ async function getComments(eventId: string): Promise<EventComment[]> {
         // Polymarket מחזירים לפעמים מערך ישיר ולפעמים אובייקט עם שדה comments
         const comments = Array.isArray(data) ? data : (data.comments || []);
         const msgs = localStorage.getItem('comments') || '[]'
-        console.log(msgs)
+
         const localComments = JSON.parse(msgs).filter((msg: any) => msg.aboutEventId === eventId)
-        console.log(eventId)
-        console.log(localComments)
+
+
         return [...localComments, ...comments];
     } catch (err) {
         console.error(`Error fetching comments for event ${eventId}:`, err);

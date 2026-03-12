@@ -107,7 +107,7 @@ export function OrderBook(market: Market) {
         ...displayedBids.map(b => b.total),
         1
     );
-    console.log(market)
+
     return (
         <section className={`order-book container ${isBookOpen ? 'open' : ''}`}>
             <header className="order-book-header flex" onClick={() => setIsBookOpen(prev => !prev)}>

@@ -30,7 +30,7 @@ export function AppHeader() {
 	const dispatch = useAppDispatch()
 	const { user } = useAppSelector((state) => state.userModule)
 	const navigate = useNavigate()
-	const [depositFields, handleDepositChange] = useForm({ amount: 0, currency: 'ILS' })
+	const [depositFields, handleDepositChange, setDepositFields] = useForm({ amount: 0, currency: 'ILS' })
 	const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
 	const [isNotificationsMenuOpen, setIsNotificationsMenuOpen] = useState(false)
 	const [isSearchOpen, setIsSearchOpen] = useState(false)
@@ -67,6 +67,13 @@ export function AppHeader() {
 			}
 		}
 	}, [])
+
+	useEffect(() => {
+		if (isModalShown) {
+			setDepositFields({ amount: 0, currency: 'ILS' })
+			setConvertedAmount(0)
+		}
+	}, [isModalShown])
 
 	useEffect(() => {
 		onConvertCurrency()

@@ -6,7 +6,7 @@ import Money from '../assets/svg/money.svg?react'
 import Delete from '../assets/svg/delete.svg?react'
 import { useAppDispatch, useAppSelector } from '../store/store'
 import { RootState } from '../store/store'
-import { setMsg } from '../store/slices/system.slice'
+import { setIsAuthShown, setIsModalShown, setMsg } from '../store/slices/system.slice'
 import { loadEvent } from '../store/slices/event.slice'
 import { eventService } from '../services/event'
 import { Market, Msg } from '../types/event'
@@ -17,9 +17,9 @@ import { getAvatarStyle, timeAgo } from '../services/util.service'
 import * as Select from '@radix-ui/react-select'
 import { ChevronDownIcon } from '@radix-ui/react-icons'
 import { setSelectedMarketId, setSelectedOutcome } from '../store/slices/user.slice'
-import { current } from '@reduxjs/toolkit'
 import { OrderBook } from '../cmps/OrderBook'
 import { LongTxt } from '../cmps/LongTxt'
+
 
 export function EventDetails() {
   const dispatch = useAppDispatch()
@@ -27,6 +27,7 @@ export function EventDetails() {
   const { event } = useAppSelector((state) => state.eventModule)
   const { user, selectedMarketId } = useAppSelector((state: RootState) => state.userModule)
   const { selectedOutcome } = useAppSelector((state: RootState) => state.userModule)
+  const { isModalShown } = useAppSelector((state) => state.systemModule)
   const [activeMarket, setActiveMarket] = useState<Market | null>(null)
   const [chartData, setChartData] = useState<{ time: number, value: number }[]>([]);
   const [timeframe, setTimeframe] = useState('all')
@@ -39,6 +40,7 @@ export function EventDetails() {
   const [limitPrice, setLimitPrice] = useState<string>('')
   const [shares, setShares] = useState<number | ''>()
   let isSport = [activeMarket?.outcomes[0]?.toLowerCase(), activeMarket?.outcomes[1]?.toLowerCase()].every(outcome => !['yes', 'no', 'up', 'down'].includes(outcome || ''))
+
   useEffect(() => {
     if (activeMarket && activeMarket.clobTokenIds) {
       // שליחת הטוקן הראשון מהמערך
@@ -146,7 +148,7 @@ export function EventDetails() {
 
   async function onDeleteMsg(msgId: string) {
     try {
-      console.log(msgId)
+
       await eventService.deleteEventMsg(msgId)
       setComments((comments) => comments.filter(c => {
         if ('_id' in c) return c._id !== msgId;
@@ -158,6 +160,16 @@ export function EventDetails() {
     }
   }
 
+  function onPlaceOrder() {
+    if (!user) {
+      dispatch(setIsAuthShown(true))
+    }
+  }
+
+  function onDeposit() {
+    dispatch(setIsModalShown(true))
+
+  }
   let selectedOutcomeIndex = selectedOutcome === 'Yes' ? 0 : selectedOutcome === 'No' ? 1 : null;
   if (selectedOutcomeIndex === null) {
     selectedOutcomeIndex = activeMarket?.outcomes.findIndex(outcome => outcome.toLowerCase() === selectedOutcome.toLowerCase()) ?? null;
@@ -168,7 +180,7 @@ export function EventDetails() {
     : 0;
   const toWin = price > 0 ? (+orderAmount / price).toFixed(2) : '0';
 
-  // console.log(activeMarket)
+  // 
   return (
     <div className="event-details-page flex">
       <section className="event-details container">
@@ -248,7 +260,7 @@ export function EventDetails() {
                         setNewMsg('')
                       }
                     } catch (err) {
-                      console.log(err)
+
                       dispatch(setMsg({ txt: 'Cannot add comment', type: 'error' }));
                     }
                   }
@@ -437,12 +449,14 @@ export function EventDetails() {
 
             }
           </div>
-          {user?.cash === 0
+          {user?.cash === 0 || user?.cash === undefined
             ?
-            (<div className="signup-link">Deposit</div>)
+            (<div className="place-order-btn" onClick={onDeposit}>Deposit</div>)
             :
             (<div className="button-wrapper">
-              <button className="place-order-btn">{`${user ? `${tradingDirection === 'buy' ? 'Buy' : 'Sell'}` : ''} ${user && selectedOutcomeIndex !== null ? activeMarket?.outcomes[selectedOutcomeIndex] : 'Trade'}`} </button>
+              <button className="place-order-btn"
+                onClick={onPlaceOrder}>
+                {`${user ? `${tradingDirection === 'buy' ? 'Buy' : 'Sell'}` : ''} ${user && selectedOutcomeIndex !== null ? activeMarket?.outcomes[selectedOutcomeIndex] : 'Trade'}`} </button>
             </div>)
           }
 
