@@ -14,26 +14,27 @@ import { AppFooter } from './cmps/AppFooter'
 import { LoginSignup } from './pages/LoginSignup'
 import { AppMsg } from './cmps/AppMsg'
 import { useAppDispatch, useAppSelector } from './store/store'
-import { setIsAuthShown, setIsModalShown } from './store/slices/system.slice'
+import { setIsAuthShown, setModalType } from './store/slices/system.slice'
 import { Modal } from './cmps/Modal'
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search } from './pages/Search'
+import { DepositModal } from './cmps/DepositModal'
 
 export function RootCmp() {
-    const { isAuthShown, isModalShown } = useAppSelector((state) => state.systemModule)
+    const { isAuthShown, modalType } = useAppSelector((state) => state.systemModule)
     const dispatch = useAppDispatch()
 
     const closeAll = () => {
-        dispatch(setIsAuthShown(false))
-        dispatch(setIsModalShown(false))
+        // dispatch(setIsAuthShown(false))
+        dispatch(setModalType(null))
     }
 
     return (
         <div className="main-container">
             <AnimatePresence>
                 {/* ניהול ה-Overlay תחת AnimatePresence */}
-                {(isAuthShown || isModalShown) && (
+                {modalType && (
                     <motion.div
                         key="app-overlay"
                         className="overlay"
@@ -45,12 +46,13 @@ export function RootCmp() {
                     />
                 )}
 
-                {/* ניהול המודאל */}
-                {isAuthShown && (
-                    <Modal key="auth-modal">
+                {modalType === 'AUTH' && (
+                    <Modal>
                         <LoginSignup />
                     </Modal>
                 )}
+
+                {modalType === 'DEPOSIT' && <DepositModal />}
             </AnimatePresence>
 
             <AppHeader />

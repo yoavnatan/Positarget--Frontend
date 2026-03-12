@@ -11,6 +11,7 @@ const modalVariants = {
 export function Modal({ children }: { children: React.ReactNode }) {
     return (
         <motion.div
+            layout
             className="modal"
             variants={modalVariants}
             initial="initial"

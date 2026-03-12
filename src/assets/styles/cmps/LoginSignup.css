@@ -7,10 +7,15 @@
 	left: 50%;
 	transform: translate(-50%, -50%);
 	width: 450px;
+	height: 380px;
 	background-color: var(--pt-white);
 	border-radius: 2em;
-	height: 380px;
+	/* height: 380px; */
 	text-align: center;
+}
+
+.login-page.signup {
+	height: 500px;
 }
 
 

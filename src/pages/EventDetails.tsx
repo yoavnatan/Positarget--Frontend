@@ -6,7 +6,7 @@ import Money from '../assets/svg/money.svg?react'
 import Delete from '../assets/svg/delete.svg?react'
 import { useAppDispatch, useAppSelector } from '../store/store'
 import { RootState } from '../store/store'
-import { setIsAuthShown, setIsModalShown, setMsg } from '../store/slices/system.slice'
+import { setIsAuthShown, setModalType, setMsg } from '../store/slices/system.slice'
 import { loadEvent } from '../store/slices/event.slice'
 import { eventService } from '../services/event'
 import { Market, Msg } from '../types/event'
@@ -27,7 +27,6 @@ export function EventDetails() {
   const { event } = useAppSelector((state) => state.eventModule)
   const { user, selectedMarketId } = useAppSelector((state: RootState) => state.userModule)
   const { selectedOutcome } = useAppSelector((state: RootState) => state.userModule)
-  const { isModalShown } = useAppSelector((state) => state.systemModule)
   const [activeMarket, setActiveMarket] = useState<Market | null>(null)
   const [chartData, setChartData] = useState<{ time: number, value: number }[]>([]);
   const [timeframe, setTimeframe] = useState('all')
@@ -162,13 +161,12 @@ export function EventDetails() {
 
   function onPlaceOrder() {
     if (!user) {
-      dispatch(setIsAuthShown(true))
+      dispatch(setModalType('AUTH'))
     }
   }
 
   function onDeposit() {
-    dispatch(setIsModalShown(true))
-
+    dispatch(setModalType('DEPOSIT'))
   }
   let selectedOutcomeIndex = selectedOutcome === 'Yes' ? 0 : selectedOutcome === 'No' ? 1 : null;
   if (selectedOutcomeIndex === null) {
@@ -181,6 +179,8 @@ export function EventDetails() {
   const toWin = price > 0 ? (+orderAmount / price).toFixed(2) : '0';
 
   // 
+
+  console.log(user)
   return (
     <div className="event-details-page flex">
       <section className="event-details container">
@@ -449,7 +449,7 @@ export function EventDetails() {
 
             }
           </div>
-          {user?.cash === 0 || user?.cash === undefined
+          {user?.cash === 0 || user && user.cash === undefined
             ?
             (<div className="place-order-btn" onClick={onDeposit}>Deposit</div>)
             :

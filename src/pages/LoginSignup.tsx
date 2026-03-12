@@ -3,7 +3,7 @@ import { LoginForm } from '../cmps/LoginForm.js'
 import { useState } from 'react'
 import { useAppDispatch } from '../store/store.js'
 import { login, signup } from '../store/slices/user.slice.js'
-import { setIsAuthShown, setMsg } from '../store/slices/system.slice.js'
+import { setIsAuthShown, setModalType, setMsg } from '../store/slices/system.slice.js'
 import { UserCred } from '../types/user.type.js'
 
 export function LoginSignup() {
@@ -19,9 +19,9 @@ export function LoginSignup() {
     async function _login(credentials: UserCred) {
         try {
             await dispatch(login(credentials)).unwrap()
-            dispatch(setIsAuthShown(false))
+            dispatch(setModalType(null))
             dispatch(setMsg({ txt: 'Logged in successfully', type: 'success' }))
-            navigate('/')
+            // navigate('/')
         } catch (err) {
 
             dispatch(setMsg({ txt: 'Failed to login', type: 'error' }))
@@ -33,8 +33,9 @@ export function LoginSignup() {
         dispatch(signup(credentials))
 
             .then(() => {
+                dispatch(setModalType(null))
                 dispatch(setMsg({ txt: 'Signed in successfully', type: 'success' }))
-                navigate('/')
+                // navigate('/')
 
             })
             .catch((err) => {
@@ -45,7 +46,7 @@ export function LoginSignup() {
 
     return (
         <>
-            <div className="login-page">
+            <div className={`login-page ${isSignup ? 'signup' : ''}`}>
                 <LoginForm
                     onLogin={onLogin}
                     isSignup={isSignup}
