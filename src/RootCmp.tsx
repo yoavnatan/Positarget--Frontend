@@ -26,7 +26,6 @@ export function RootCmp() {
     const dispatch = useAppDispatch()
 
     const closeAll = () => {
-        // dispatch(setIsAuthShown(false))
         dispatch(setModalType(null))
     }
 
@@ -51,6 +50,8 @@ export function RootCmp() {
                         <LoginSignup />
                     </Modal>
                 )}
+
+
 
                 {modalType === 'DEPOSIT' && <DepositModal />}
             </AnimatePresence>

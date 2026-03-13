@@ -19,7 +19,7 @@ import { ChevronDownIcon } from '@radix-ui/react-icons'
 import { setSelectedMarketId, setSelectedOutcome } from '../store/slices/user.slice'
 import { OrderBook } from '../cmps/OrderBook'
 import { LongTxt } from '../cmps/LongTxt'
-
+import { confirmAlert } from 'react-confirm-alert';
 
 export function EventDetails() {
   const dispatch = useAppDispatch()
@@ -146,17 +146,55 @@ export function EventDetails() {
   }
 
   async function onDeleteMsg(msgId: string) {
-    try {
+    confirmAlert({
+      title: 'Confirm to delete', // חובה לספק כותרת בבסיס למרות ה-customUI
+      closeOnClickOutside: true,
+      closeOnEscape: true,
+      customUI: ({ onClose }) => {
+        return (
+          <div className="delete-modal" style={{ padding: '1em', textAlign: 'center' }}>
+            <h2 style={{ fontFamily: 'izmir-medium', marginBottom: '.5em' }}>Comment Deleting</h2>
+            <p style={{ fontFamily: 'izmir-light' }}>
+              Are you sure?
+            </p>
 
-      await eventService.deleteEventMsg(msgId)
-      setComments((comments) => comments.filter(c => {
-        if ('_id' in c) return c._id !== msgId;
-        return true;
-      }))
-      dispatch(setMsg({ txt: 'Comment deleted', type: 'success' }))
-    } catch (err) {
-      dispatch(setMsg({ txt: 'Cannot delete comment', type: 'error' }))
-    }
+            <div className="flex" style={{ marginTop: '.5em', justifyContent: 'center' }}>
+              <button className="money-btn" onClick={onClose}>
+                Cancel
+              </button>
+
+              <button
+                className="place-order-btn"
+                style={{
+                  width: 'auto',
+                  margin: 0,
+                  backgroundColor: '#ff4d4d',
+                  border: '2px solid black',
+                  borderRadius: '2em',
+                  color: 'white',
+                  paddingInline: '1em'
+                }}
+                onClick={async () => {
+                  try {
+                    await eventService.deleteEventMsg(msgId)
+                    setComments((comments) => comments.filter(c => {
+                      if ('_id' in c) return c._id !== msgId;
+                      return true;
+                    }))
+                    dispatch(setMsg({ txt: 'Comment deleted', type: 'success' }))
+                  } catch (err) {
+                    dispatch(setMsg({ txt: 'Cannot delete comment', type: 'error' }))
+                  }
+                  onClose();
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        )
+      }
+    });
   }
 
   function onPlaceOrder() {
@@ -266,7 +304,23 @@ export function EventDetails() {
                   }
                 }}
               />
-              <button className="signup-link" disabled={!newMsg}>Post</button>
+              <button className="signup-link" disabled={!newMsg} onClick={async () => {
+                if (newMsg.trim()) {
+                  const newComment = newMsg;
+                  try {
+                    if (event) {
+                      const msg: Msg = await eventService.addEventMsg(event._id, newComment);
+                      setComments((comments) => [
+                        msg, ...comments
+                      ]);
+                      setNewMsg('')
+                    }
+                  } catch (err) {
+
+                    dispatch(setMsg({ txt: 'Cannot add comment', type: 'error' }));
+                  }
+                }
+              }}>Post</button>
             </div>
             <div className="comments-list">
               {comments.length > 0 ? (

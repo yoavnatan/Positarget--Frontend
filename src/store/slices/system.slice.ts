@@ -1,15 +1,13 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 
 interface SystemState {
-    // isLoading משמש כאן רק לטעינה גלובלית (כמו טעינת אפליקציה ראשונית)
     isLoading: boolean
-    // הודעת שגיאה או הצלחה שתרצה להציג ב-Toast/Modal גלובלי
     msg: {
         txt: string
         type: 'success' | 'error' | 'info' | null
     } | null
     isAuthShown: boolean
-    modalType: 'DEPOSIT' | 'USER_EDIT' | 'AUTH' | null
+    modalType: 'DEPOSIT' | 'AUTH' | null
 }
 
 const initialState: SystemState = {
