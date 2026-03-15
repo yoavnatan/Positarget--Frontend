@@ -76,3 +76,4 @@ export interface Orderbook {
     bids: OrderbookLevel[];
     asks: OrderbookLevel[];
 }
+

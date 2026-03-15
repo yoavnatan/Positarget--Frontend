@@ -21,7 +21,7 @@ export interface UserCred {
 }
 
 export type Position = {
-    eventId: string
+    marketId: string
     outcome: string
     shares: number
     avgPrice: number

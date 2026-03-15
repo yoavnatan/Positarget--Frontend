@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
@@ -16,10 +16,12 @@ import { EventComment } from '../types/event'
 import { getAvatarStyle, timeAgo } from '../services/util.service'
 import * as Select from '@radix-ui/react-select'
 import { ChevronDownIcon } from '@radix-ui/react-icons'
-import { setSelectedMarketId, setSelectedOutcome } from '../store/slices/user.slice'
+import { setSelectedMarketId, setSelectedOutcome, updateUser } from '../store/slices/user.slice'
 import { OrderBook } from '../cmps/OrderBook'
 import { LongTxt } from '../cmps/LongTxt'
 import { confirmAlert } from 'react-confirm-alert';
+import { userService } from '../services/user'
+import { User } from '../types/user.type'
 
 export function EventDetails() {
   const dispatch = useAppDispatch()
@@ -39,6 +41,7 @@ export function EventDetails() {
   const [limitPrice, setLimitPrice] = useState<string>('')
   const [shares, setShares] = useState<number | ''>()
   let isSport = [activeMarket?.outcomes[0]?.toLowerCase(), activeMarket?.outcomes[1]?.toLowerCase()].every(outcome => !['yes', 'no', 'up', 'down'].includes(outcome || ''))
+  const marketOrderRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     if (activeMarket && activeMarket.clobTokenIds) {
@@ -197,15 +200,162 @@ export function EventDetails() {
     });
   }
 
-  function onPlaceOrder() {
-    if (!user) {
-      dispatch(setModalType('AUTH'))
+  function confirmOrder(title: string, message: string, onConfirm: () => Promise<void>) {
+    confirmAlert({
+      customUI: ({ onClose }) => (
+        <div className="transaction-modal" style={{ padding: '1em', textAlign: 'center' }}>
+          <h2 style={{ fontFamily: 'izmir-medium', marginBottom: '.5em' }}>{title}</h2>
+          <p style={{ fontFamily: 'izmir-light' }}>{message}</p>
+          <div className="flex" style={{ marginTop: '.5em', justifyContent: 'center' }}>
+            <button className="money-btn" onClick={onClose}>Cancel</button>
+            <button
+              className="place-order-btn"
+              style={{ width: 'auto', margin: 0, backgroundColor: 'green', color: 'white', paddingInline: '1em', border: '2px solid black', borderRadius: '2em' }}
+              onClick={async () => {
+                await onConfirm();
+                onClose();
+              }}
+            >
+              Confirm
+            </button>
+          </div>
+        </div>
+      )
+    });
+  }
+
+  // --- 1. הפונקציה הראשית  ---
+  function onPlaceOrder(outcomeIdx: number | null) {
+    if (!user) return dispatch(setModalType('AUTH'))
+    if (outcomeIdx === null || !activeMarket) return
+
+    // וולידציה של אינפוט (עם האנימציה)
+    if (!orderAmount || +orderAmount <= 0) {
+      return triggerShakeEffect()
+    }
+
+    if (tradingDirection === 'buy') handleBuy(outcomeIdx)
+    else handleSell(outcomeIdx)
+  }
+
+  // --- 2. לוגיקת קנייה ---
+  async function handleBuy(outcomeIdx: number) {
+    const priceInCents = activeMarket!.outcomePrices[outcomeIdx]
+    const outcomeName = activeMarket!.outcomes[outcomeIdx]
+    const totalCost = +orderAmount // היוזר הזין 100 (דולר)
+
+    // בדיקת יתרה
+    if (!user?.cash || (totalCost > user.cash + 0.0001)) {
+      return dispatch(setMsg({ txt: 'Insufficient balance', type: 'error' }))
+    }
+
+    // החישוב הנכון: דולרים חלקי (מחיר בסנטים / 100)
+    // למשל: 100$ / 0.02$ = 5,000 מניות
+    const sharesToBuy = totalCost / (priceInCents / 100)
+
+    const msg = `You are going to spend $${totalCost} to buy ${sharesToBuy.toFixed(2)} shares of ${outcomeName}. Are you sure?`
+
+    confirmOrder('Confirm Buy', msg, async () => {
+      const existingPosIdx = user!.portfolio?.findIndex(
+        p => p.marketId === activeMarket!.id && p.outcome === outcomeName
+      )
+
+      let updatedPortfolio = [...(user!.portfolio || [])]
+
+      if (existingPosIdx !== -1 && existingPosIdx !== undefined) {
+        // עדכון פוזיציה קיימת: סוכמים מניות ומחשבים מחיר ממוצע חדש
+        const existingPos = updatedPortfolio[existingPosIdx]
+        const newTotalShares = existingPos.shares + sharesToBuy
+        const totalInvestment = (existingPos.shares * existingPos.avgPrice) + (sharesToBuy * priceInCents)
+
+        updatedPortfolio[existingPosIdx] = {
+          ...existingPos,
+          shares: newTotalShares,
+          avgPrice: totalInvestment / newTotalShares
+        }
+      } else {
+        // יצירת פוזיציה חדשה
+        updatedPortfolio.push({
+          marketId: activeMarket!.id,
+          outcome: outcomeName,
+          shares: sharesToBuy,
+          avgPrice: priceInCents
+        })
+      }
+
+      await saveUserUpdate({
+        ...user!,
+        cash: user!.cash! - totalCost,
+        portfolio: updatedPortfolio
+      })
+    })
+  }
+
+  // --- 3. לוגיקת מכירה ---
+  async function handleSell(outcomeIdx: number) {
+    const priceInCents = activeMarket!.outcomePrices[outcomeIdx]
+    const outcomeName = activeMarket!.outcomes[outcomeIdx]
+
+    const position = user?.portfolio?.find(p =>
+      p.marketId === activeMarket!.id && p.outcome === outcomeName
+    )
+
+    const sharesToSell = +orderAmount // היוזר מזין כמה מניות למכור (למשל 5,000)
+
+    if (!position || position.shares < sharesToSell) {
+      return dispatch(setMsg({ txt: 'Not enough shares', type: 'error' }))
+    }
+
+    // החישוב הנכון: (כמות מניות * מחיר נוכחי בסנטים) / 100
+    // למשל: (5,000 * 2) / 100 = 100 דולר
+    const revenue = (sharesToSell * priceInCents) / 100
+
+    const msg = `You are selling ${sharesToSell} shares for $${revenue.toFixed(2)}. Are you sure?`
+
+    confirmOrder('Confirm Sell', msg, async () => {
+      const updatedShares = position.shares - sharesToSell
+
+      const updatedUser = {
+        ...user!,
+        cash: (user!.cash || 0) + revenue,
+        portfolio: updatedShares > 0
+          ? user!.portfolio!.map(p => p.marketId === activeMarket!.id && p.outcome === outcomeName
+            ? { ...p, shares: updatedShares } : p)
+          : user!.portfolio!.filter(p => !(p.marketId === activeMarket!.id && p.outcome === outcomeName))
+      }
+
+      await saveUserUpdate(updatedUser)
+    })
+  }
+
+
+  // --- פונקציית עזר לעדכון השרת והסטייט ---
+  async function saveUserUpdate(updatedUser: User) {
+    try {
+      await userService.update(updatedUser)
+      dispatch(updateUser(updatedUser))
+      dispatch(setMsg({ txt: 'Transaction succeeded', type: 'success' }))
+      setOrderAmount('') // איפוס האינפוט בסיום
+    } catch (err) {
+      dispatch(setMsg({ txt: 'Cannot execute this transaction', type: 'error' }))
+    }
+  }
+
+
+
+  // --- 5. עזר ל-UI ---
+  function triggerShakeEffect() {
+    const el = marketOrderRef.current
+    if (el) {
+      el.classList.add('shake')
+      setTimeout(() => el.classList.remove('shake'), 500)
     }
   }
 
   function onDeposit() {
     dispatch(setModalType('DEPOSIT'))
   }
+
   let selectedOutcomeIndex = selectedOutcome === 'Yes' ? 0 : selectedOutcome === 'No' ? 1 : null;
   if (selectedOutcomeIndex === null) {
     selectedOutcomeIndex = activeMarket?.outcomes.findIndex(outcome => outcome.toLowerCase() === selectedOutcome.toLowerCase()) ?? null;
@@ -214,11 +364,12 @@ export function EventDetails() {
   const price = selectedOutcomeIndex !== null && activeMarket?.outcomePrices[selectedOutcomeIndex]
     ? activeMarket.outcomePrices[selectedOutcomeIndex] / 100
     : 0;
-  const toWin = price > 0 ? (+orderAmount / price).toFixed(2) : '0';
+  let toWin
+  if (tradingDirection === 'buy') toWin = price > 0 ? (+orderAmount / price).toFixed(2) : '0';
+  else toWin = price > 0 ? (+orderAmount * price).toFixed(2) : '0';
 
   // 
 
-  console.log(user)
   return (
     <div className="event-details-page flex">
       <section className="event-details container">
@@ -406,7 +557,7 @@ export function EventDetails() {
             <>
               {tradingDirection === 'buy'
                 ? (
-                  <div className="market-order flex">
+                  <div className="market-order flex" ref={marketOrderRef}>
                     <div className="order-info">
                       <h4>Amount</h4>
                       <h6>Balance ${user?.cash?.toFixed(2)}</h6>
@@ -420,7 +571,7 @@ export function EventDetails() {
                     />
                   </div>)
                 : (
-                  <div className="market-order flex">
+                  <div className="market-order flex" ref={marketOrderRef}>
                     <div className="order-info">
                       <h4>Shares</h4>
                     </div>
@@ -438,8 +589,19 @@ export function EventDetails() {
                 <button className="money-btn" onClick={() => setOrderAmount(prev => (parseFloat(prev) + 5).toString())}>+$5</button>
                 <button className="money-btn" onClick={() => setOrderAmount(prev => (parseFloat(prev) + 10).toString())}>+$10</button>
                 <button className="money-btn" onClick={() => setOrderAmount(prev => (parseFloat(prev) + 100).toString())}>+$100</button>
-                <button className="money-btn" onClick={() => setOrderAmount(user?.cash ? user.cash.toFixed(2) : '0')}>Max</button>
-              </div>}
+                <button
+                  className="money-btn"
+                  onClick={() => {
+                    if (tradingDirection === 'buy') {
+                      setOrderAmount(user?.cash ? user.cash.toFixed(2) : '0')
+                    } else {
+                      const position = user?.portfolio?.find(pos => pos.marketId === activeMarket?.id && pos.outcome === selectedOutcome)
+                      setOrderAmount(position ? position.shares.toString() : '0')
+                    }
+                  }}
+                >
+                  Max
+                </button>              </div>}
             </>
 
           ) : (
@@ -482,38 +644,50 @@ export function EventDetails() {
           <div className={`order-summary flex ${(+orderAmount > 0) || tradingMethod === "limit" ? 'open' : ''} ${tradingDirection === 'sell' ? 'sell' : ''}`}>
             <div className="order-info">
               {tradingMethod === 'limit' && tradingDirection === 'buy' && <h2>Total</h2>}
-              <h2>{`${tradingDirection === 'buy' ? 'To win' : `You'll receive`}`} {tradingMethod === 'market' && <Money className="money-icon" />}</h2>
-              {tradingMethod === 'market' && <h6>Avg. Price</h6>}
+              <h2>
+                {`${tradingDirection === 'buy' ? 'To win' : `You'll receive`}`}
+                {tradingMethod === 'market' && <Money className="money-icon" />}
+              </h2>
+
+              {/* כאן הוספנו את הצגת המחיר הממוצע בצורה דינמית */}
+              {tradingMethod === 'market' && (
+                <h6 className="avg-price-display">
+                  Avg. Price: {(price * 100).toFixed(1)}¢
+                </h6>
+              )}
             </div>
-            {tradingMethod === 'market'
-              ?
-              (<div className="to-win">
+
+            {tradingMethod === 'market' ? (
+              <div className="to-win">
                 ${toWin}
-              </div>)
-              : (
-                <div className="limit-summary">
-                  {tradingDirection === 'buy' && <div className={`total`}>
+              </div>
+            ) : (
+              <div className="limit-summary">
+                {tradingDirection === 'buy' && (
+                  <div className={`total`}>
                     ${limitPrice && shares ? ((+limitPrice / 100) * +shares).toFixed(2) : '0'}
-                  </div>}
-                  <div className="to-win">
-                    <Money className="money-icon limit" /> ${tradingDirection === 'buy' ? shares || 0 : limitPrice && shares ? ((+limitPrice / 100) * +shares).toFixed(2) : '0'}
                   </div>
+                )}
+                <div className="to-win">
+                  <Money className="money-icon limit" />
+                  ${tradingDirection === 'buy' ? shares || 0 : limitPrice && shares ? ((+limitPrice / 100) * +shares).toFixed(2) : '0'}
                 </div>
-              )
-
-            }
+              </div>
+            )}
           </div>
-          {user?.cash === 0 || user && user.cash === undefined
-            ?
-            (<div className="place-order-btn" onClick={onDeposit}>Deposit</div>)
-            :
-            (<div className="button-wrapper">
-              <button className="place-order-btn"
-                onClick={onPlaceOrder}>
-                {`${user ? `${tradingDirection === 'buy' ? 'Buy' : 'Sell'}` : ''} ${user && selectedOutcomeIndex !== null ? activeMarket?.outcomes[selectedOutcomeIndex] : 'Trade'}`} </button>
-            </div>)
-          }
 
+          {tradingDirection === 'buy' && (user?.cash === 0 || (user && user.cash === undefined)) ? (
+            <div className="place-order-btn" onClick={onDeposit}>Deposit</div>
+          ) : (
+            <div className="button-wrapper">
+              <button
+                className="place-order-btn"
+                onClick={() => onPlaceOrder(selectedOutcomeIndex)}
+              >
+                {`${user ? `${tradingDirection === 'buy' ? 'Buy' : 'Sell'}` : ''} ${user && selectedOutcomeIndex !== null ? activeMarket?.outcomes[selectedOutcomeIndex] : 'Trade'}`}
+              </button>
+            </div>
+          )}
         </footer>
       </section>
     </div >

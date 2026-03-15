@@ -15,7 +15,6 @@ export function OrderBook(market: Market) {
     const [hasNoBook, setHasNoBook] = useState(false);
     const spreadRef = useRef<HTMLDivElement>(null);
     const tableRef = useRef<HTMLDivElement>(null);
-    const displayedAsksRef = useRef<OrderbookLevel[]>([]);
     const isInitialLoad = useRef(false);
     const [isLoading, setIsLoading] = useState(false);
     const { selectedOutcome } = useAppSelector((state: RootState) => state.userModule)
@@ -30,7 +29,6 @@ export function OrderBook(market: Market) {
         loadOrderBooks();
     }, [market.id, selectedOutcomeIndex]);
 
-
     async function loadOrderBooks() {
         setIsLoading(true)
         isInitialLoad.current = true;
@@ -39,7 +37,6 @@ export function OrderBook(market: Market) {
             const books = await Promise.all(
                 market.clobTokenIds.map(id => eventService.fetchOrderBook(id))
             );
-
 
             const currentBook = books[selectedOutcomeIndex ?? 0];
 
@@ -50,36 +47,35 @@ export function OrderBook(market: Market) {
                 return;
             }
 
-            setAsks(currentBook.asks || []);
-            setBids(currentBook.bids || []);
+            const sortedAsks = [...(currentBook.asks || [])].sort((a, b) => a.price - b.price);
+            const sortedBids = [...(currentBook.bids || [])].sort((a, b) => b.price - a.price);
+
+            let cumulativeAsksTotal = 0;
+            const processedAsks = sortedAsks.map(ask => {
+                cumulativeAsksTotal += ask.size;
+                return { ...ask, total: cumulativeAsksTotal };
+            });
+
+            let cumulativeBidsTotal = 0;
+            const processedBids = sortedBids.map(bid => {
+                cumulativeBidsTotal += bid.size;
+                return { ...bid, total: cumulativeBidsTotal };
+            });
+
+            setAsks(processedAsks);
+            setBids(processedBids);
             setIsLoading(false);
         } catch (err) {
             setHasNoBook(true);
             console.error('Fetch failed');
-
         }
-    };
-    // גלול לאמצע אוטומטית כשנתונים חדשים נטענים
+    }
+
     useEffect(() => {
         if (!asks.length && !bids.length) return;
-        if (!isInitialLoad.current) return; // ← אם זה עדכון מסוקט — לא גולל
-        isInitialLoad.current = false; // ← אפס אחרי הגלילה הראשונה
-
-        const table = tableRef.current;
-        if (!table) return;
-
-        setTimeout(() => {
-            const rowHeight = 28;
-            const numberOfAsks = displayedAsksRef.current.length;
-            const spreadTop = numberOfAsks * rowHeight;
-            const spreadHeight = 35;
-            const containerHalfHeight = table.clientHeight / 2;
-
-            table.scrollTo({
-                top: spreadTop - containerHalfHeight + (spreadHeight / 2),
-                behavior: 'auto'
-            });
-        }, 0);
+        if (!isInitialLoad.current) return;
+        isInitialLoad.current = false;
+        scrollToSpread();
     }, [asks, bids]);
 
     function scrollToSpread() {
@@ -87,26 +83,19 @@ export function OrderBook(market: Market) {
         if (!table) return;
 
         const rowHeight = 28;
-        const numberOfAsks = displayedAsksRef.current.length;
+        const numberOfAsks = asks.length;
         const spreadTop = numberOfAsks * rowHeight;
         const spreadHeight = 35;
         const containerHalfHeight = table.clientHeight / 2;
 
         table.scrollTo({
             top: spreadTop - containerHalfHeight + (spreadHeight / 2),
-            behavior: 'smooth'
+            behavior: 'auto'
         });
     }
 
-    const displayedAsks = asks;
-    const displayedBids = bids;
-    displayedAsksRef.current = displayedAsks;
-
-    const maxTotal = Math.max(
-        ...displayedAsks.map(a => a.total),
-        ...displayedBids.map(b => b.total),
-        1
-    );
+    const maxAskTotal = asks.length > 0 ? asks[asks.length - 1].total : 1;
+    const maxBidTotal = bids.length > 0 ? bids[bids.length - 1].total : 1;
 
     return (
         <section className={`order-book container ${isBookOpen ? 'open' : ''}`}>
@@ -132,16 +121,14 @@ export function OrderBook(market: Market) {
                             Trade {market.outcomes[1]}
                         </span>
                         <div className="icon-wrapper">
-                            <Refresh className={`refresh-icon ${isLoading ? "loading" : ''}`} onClick={
-                                () => { loadOrderBooks() }
-                            } />
+                            <Refresh className={`refresh-icon ${isLoading ? "loading" : ''}`} onClick={loadOrderBooks} />
                         </div>
                     </div>
 
                     <div className="table-header">
                         <span className="trade-header uppercase">
                             TRADE {market.outcomes[selectedOutcomeIndex ?? 0]}
-                            <div className="icon-wrapper" onClick={scrollToSpread}>
+                            <div className="icon-wrapper" onClick={() => scrollToSpread()}>
                                 <Center className="center-icon" />
                             </div>
                         </span>
@@ -159,11 +146,11 @@ export function OrderBook(market: Market) {
                         ) : (
                             <>
                                 <div className="table asks">
-                                    {[...displayedAsks].reverse().map((ask, i) => (
+                                    {[...asks].reverse().map((ask, i) => (
                                         <div key={i} className="row ask-row">
                                             <span
                                                 className="side sell"
-                                                style={{ backgroundSize: `${((displayedAsks.length - i) / displayedAsks.length) * 100}% 100%` }}
+                                                style={{ backgroundSize: `${(ask.total / maxAskTotal) * 100}% 100%` }}
                                             ></span>
                                             <span className="price">{(ask.price * 100).toFixed(0)}¢</span>
                                             <span className="shares">{ask.size.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
@@ -173,16 +160,18 @@ export function OrderBook(market: Market) {
                                 </div>
 
                                 <div className="center-divider" ref={spreadRef}>
-                                    <span>Last: {market.outcomePrices[selectedOutcomeIndex]}¢ </span>
-                                    <span>Spread: {asks[0] && bids[0] ? ((asks[0].price - bids[0].price) * 100).toFixed(0) : 0}¢</span>
+                                    <span>Last: {market.outcomePrices[selectedOutcomeIndex ?? 0]}¢ </span>
+                                    <span>
+                                        Spread: {asks[0] && bids[0] ? Math.abs((asks[0].price - bids[0].price) * 100).toFixed(1) : 0}¢
+                                    </span>
                                 </div>
 
                                 <div className="table bids">
-                                    {displayedBids.map((bid, i) => (
+                                    {bids.map((bid, i) => (
                                         <div key={i} className="row bid-row">
                                             <span
                                                 className="side buy"
-                                                style={{ backgroundSize: `${(bid.total / maxTotal) * 100}% 100%` }}
+                                                style={{ backgroundSize: `${(bid.total / maxBidTotal) * 100}% 100%` }}
                                             ></span>
                                             <span className="price">{(bid.price * 100).toFixed(0)}¢</span>
                                             <span className="shares">{bid.size.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
