@@ -21,6 +21,14 @@ export function EventIndex() {
     const { categorie } = useParams() as { categorie: string }
     const { user } = useAppSelector(state => state.userModule)
     const [eventsToShow, setEventsToShow] = useState<Event[]>([])
+    const isFetchingNextPage = useRef(false)
+
+
+    useEffect(() => {
+        if (!isLoading) {
+            isFetchingNextPage.current = false
+        }
+    }, [isLoading])
 
     useEffect(() => {
         setIsAutoLoad(false)
@@ -88,11 +96,16 @@ export function EventIndex() {
 
     // פונקציה שמזהה את האלמנט האחרון ברשימה
     const lastEventElementRef = useCallback((node: HTMLDivElement) => {
-        if (isLoading || !isAutoLoad || !hasMore) return
+        // אם אנחנו כבר טוענים, או שהגענו לסוף, או שכבר יצאה בקשה - אל תעשה כלום
+        if (isLoading || !isAutoLoad || !hasMore || isFetchingNextPage.current) return
+
         if (observer.current) observer.current.disconnect()
 
         observer.current = new IntersectionObserver(entries => {
             if (entries[0].isIntersecting) {
+                // חסימה מיידית כדי למנוע מה-Observer לירות שוב בחצי שניה הקרובה
+                isFetchingNextPage.current = true
+
                 setAutoLoadCount(prevCount => {
                     if (prevCount < 2) {
                         setPage(prevPage => {

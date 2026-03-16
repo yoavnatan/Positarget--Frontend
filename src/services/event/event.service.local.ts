@@ -15,26 +15,14 @@ const STORAGE_KEY = 'event'
 // בדיקה כפולה - גם סביבת Vite וגם הכתובת בדפדפן
 const isProduction = import.meta.env.PROD || window.location.hostname.includes('github.io')
 
-// אם אנחנו בגיטהאב, אנחנו חייבים פרוקסי. בלוקלי (אם אין לך Node) - גם כדאי שיהיה.
-const PROXY = isProduction ? 'https://api.allorigins.win/raw?url=' : ''
-
+const PROXY = 'https://cors-anywhere.com/'
 const POLY_BASE = 'https://gamma-api.polymarket.com'
 
-const POLY_EVENTS_API = isProduction
-    ? `${PROXY}${encodeURIComponent(POLY_BASE)}`
-    : '/poly-api'
-
-const POLY_SEARCH_API = isProduction
-    ? `${PROXY}${encodeURIComponent(POLY_BASE + '/public-search')}`
-    : '/poly-search'
-
-const POLY_CLOB_API = isProduction
-    ? `${PROXY}${encodeURIComponent('https://clob.polymarket.com')}`
-    : '/poly-clob'
-
-const POLY_COMMENTS_API = isProduction
-    ? `${PROXY}${encodeURIComponent(POLY_BASE + '/comments')}`
-    : '/poly-comments'
+// שימוש ב- + במקום Template Strings כדי למנוע קידוד אוטומטי של תווים מיוחדים
+const POLY_EVENTS_API = isProduction ? PROXY + POLY_BASE : '/poly-api'
+const POLY_SEARCH_API = isProduction ? PROXY + POLY_BASE + '/public-search' : '/poly-search'
+const POLY_CLOB_API = isProduction ? PROXY + 'https://clob.polymarket.com' : '/poly-clob'
+const POLY_COMMENTS_API = isProduction ? PROXY + POLY_BASE + '/comments' : '/poly-comments'
 
 export const eventService = {
     query,
@@ -93,7 +81,8 @@ async function query(filterBy: FilterBy, category: string = 'all', page: number 
 //     }
 // }
 async function fetchEventById(eventId: string): Promise<Event | null> {
-    const url = `${POLY_EVENTS_API}/events/${eventId}`;
+    // שינוי לחיבור פשוט
+    const url = POLY_EVENTS_API + '/events/' + eventId;
 
     try {
         const res = await fetch(url);
