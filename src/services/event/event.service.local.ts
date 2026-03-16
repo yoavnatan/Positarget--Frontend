@@ -13,6 +13,13 @@ import { polyImgs } from '../imgs';
 
 const STORAGE_KEY = 'event'
 
+const isProd = import.meta.env.PROD
+
+const POLY_EVENTS_API = isProd ? 'https://gamma-api.polymarket.com' : '/poly-api'
+const POLY_CLOB_API = isProd ? 'https://clob.polymarket.com' : '/poly-clob'
+const POLY_SEARCH_API = isProd ? 'https://gamma-api.polymarket.com/public-search' : '/poly-search'
+const POLY_COMMENTS_API = isProd ? 'https://gamma-api.polymarket.com/comments' : '/poly-comments'
+
 export const eventService = {
     query,
     getById,
@@ -32,23 +39,27 @@ window.cs = eventService
 
 
 async function query(filterBy: FilterBy, category: string = 'all', page: number = 0) {
-    // שליפת המיון מהפילטר. אם הוא ריק, ברירת המחדל היא volume
     const sortBy = filterBy.sortField || 'volume'
-    // שליחת ה-sortBy ל-fetchEvents
-    var events: Event[] = await fetchEvents(category, page, sortBy)
 
-    // סינון טקסטואלי מקומי רק אם המשתמש הזין טקסט בחיפוש
-    if (filterBy.txt) {
-        const regex = new RegExp(filterBy.txt, 'i')
-        events = events.filter(event =>
-            regex.test(event.title) ||
-            (event.description && regex.test(event.description))
-        )
+    // אם אנחנו ב-GitHub Pages, אין שרת Backend. 
+    // אנחנו חייבים למשוך נתונים ישירות מה-API של Polymarket.
+    if (isProd) {
+        console.log('Production mode: Fetching directly from Gamma API')
+        console.log('!!! PRODUCTION MODE ACTIVE - VERSION 2 !!!')
+        return await fetchEvents(category, page, sortBy)
     }
 
-    return events
+    // בלוקלי (isProd === false), נסה לפנות ל-Backend שלך
+    try {
+        const res = await fetch(`/api/event?txt=${filterBy.txt}&sortField=${sortBy}`)
+        if (!res.ok) throw new Error('Local backend not responding')
+        return await res.json()
+    } catch (err) {
+        // אם ה-Backend הלוקלי כבוי או שיש שגיאה, נשתמש ב-API של פולימרקט כגיבוי
+        console.warn('Backend error, falling back to Polymarket API')
+        return await fetchEvents(category, page, sortBy)
+    }
 }
-
 // async function getEventsByIds(eventIds: string[]): Promise<Event[]> {
 //     if (!eventIds || eventIds.length === 0) return [];
 
@@ -71,22 +82,17 @@ async function query(filterBy: FilterBy, category: string = 'all', page: number 
 //         return [];
 //     }
 // }
-
 async function fetchEventById(eventId: string): Promise<Event | null> {
-    const url = `/poly-api/events/${eventId}`;
+    const url = `${POLY_EVENTS_API}/events/${eventId}`;
 
     try {
         const res = await fetch(url);
-        if (!res.ok) {
-            console.error(`Failed to fetch event with ID ${eventId}: ${res.statusText}`);
-            return null;
-        }
+        if (!res.ok) return null;
         const rawEvent = await res.json();
         const processedEvents = processRawEvents([rawEvent]);
-
         return processedEvents.length > 0 ? processedEvents[0] : null;
     } catch (err) {
-        console.error(`Error fetching event with ID ${eventId}:`, err);
+        console.error(`Error fetching event ${eventId}:`, err);
         return null;
     }
 }
@@ -365,43 +371,29 @@ export async function fetchEvents(categoryName?: string, page: number = 0, sortB
     const limit = 30;
     const currentOffset = page * limit;
 
-    // מפת IDs סופית ובדוקה עבור ה-Gamma API של Polymarket
     const CATEGORY_MAP: Record<string, string> = {
-        "politics": "2",
-        "sports": "100639",
-        "crypto": "21",
-        "finance": "120",
-        "geopolitics": "100265",
-        "earnings": "100262",
-        "tech": "1401",
-        "culture": "596",
-        "world": "1",
-        "economy": "100260",
-        "climate-science": "100267",
-        "mentions": "100251"
+        "politics": "2", "sports": "100639", "crypto": "21", "finance": "120",
+        "geopolitics": "100265", "earnings": "100262", "tech": "1401",
+        "culture": "596", "world": "1", "economy": "100260",
+        "climate-science": "100267", "mentions": "100251"
     };
 
-    let url = `/poly-api/events?active=true&closed=false&limit=${limit}&offset=${currentOffset}&order=volume&ascending=false`;
+    // שימוש במשתנה הדינמי במקום נתיב יחסי
+    let url = `${POLY_EVENTS_API}/events?active=true&closed=false&limit=${limit}&offset=${currentOffset}&order=volume&ascending=false`;
 
-    // הזרקת ה-ID הנכון
     if (categoryName && categoryName !== 'all') {
         const tagId = CATEGORY_MAP[categoryName.toLowerCase()];
-        if (tagId) {
-            url += `&tag_id=${tagId}`;
-        }
+        if (tagId) url += `&tag_id=${tagId}`;
     }
 
     try {
-        // תוכל לראות ב-Console שה-URL נבנה נכון
         const res = await fetch(url);
         if (!res.ok) throw new Error(`API Error: ${res.status}`);
-
         const data = await res.json();
         if (!data || data.length === 0) return [];
 
         let events = processRawEvents(data);
 
-        // לוגיקת המיון המקומית שלך (השארתי אותה בדיוק כפי שביקשת)
         const now = Date.now();
         if (sortBy.toLowerCase() === 'volume') {
             events.sort((a, b) => b.volume - a.volume);
@@ -415,7 +407,6 @@ export async function fetchEvents(categoryName?: string, page: number = 0, sortB
                 return scoreB - scoreA;
             });
         }
-
         return events;
     } catch (err) {
         console.error("Fetch failed:", err);
@@ -426,31 +417,22 @@ export async function fetchEvents(categoryName?: string, page: number = 0, sortB
 export async function searchEvents(searchTerm: string, limit: number = 200): Promise<Event[]> {
     if (!searchTerm) return []
 
-    const url = `/poly-search?q=${encodeURIComponent(searchTerm)}&optimized=false&limit_per_type=${limit}&search_tags=true`
+    // שימוש במשתנה הדינמי לחיפוש
+    const url = `${POLY_SEARCH_API}?q=${encodeURIComponent(searchTerm)}&optimized=false&limit_per_type=${limit}&search_tags=true`
 
     try {
         const res = await fetch(url)
         if (!res.ok) throw new Error('Search failed')
-
         const data = await res.json()
         const rawResults = data.events || []
 
-        const fixedResults = rawResults.map((ev: any) => {
-            const safeId = ev.id || ev.eventId || ev._id
+        const fixedResults = rawResults.map((ev: any) => ({
+            ...ev,
+            id: ev.id || ev.eventId || ev._id,
+            tags: Array.isArray(ev.tags) ? ev.tags.map((t: any) => typeof t === 'string' ? { label: t } : t) : []
+        }))
 
-            return {
-                ...ev,
-                id: safeId,
-                tags: Array.isArray(ev.tags)
-                    ? ev.tags.map((t: any) => typeof t === 'string' ? { label: t } : t)
-                    : []
-            }
-        })
-
-        const processed = processRawEvents(fixedResults)
-
-        return processed
-
+        return processRawEvents(fixedResults)
     } catch (err) {
         console.error("Search failed:", err)
         return []
@@ -464,22 +446,19 @@ export async function searchEvents(searchTerm: string, limit: number = 200): Pro
 רזולוציית הזמן (למשל '6h', '1h', '1d')
  */
 async function fetchMarketPriceHistory(clobTokenId: string, interval: string = ''): Promise<{ time: number, value: number }[]> {
-    // שימוש ב-clobTokenId בתוך ה-URL
     if (!interval) interval = '';
-    const url = `/poly-clob/prices-history?market=${clobTokenId}&interval=${interval}`;
+    // כאן היה /poly-clob/prices-history - שינינו למשתנה הדינמי
+    const url = `${POLY_CLOB_API}/prices-history?market=${clobTokenId}&interval=${interval}`;
 
     try {
         const res = await fetch(url);
         if (!res.ok) throw new Error(`Status: ${res.status}`);
-
         const data = await res.json();
-
-        // ה-CLOB מחזיר אובייקט עם שדה history
         if (!data || !data.history) return [];
 
         return data.history.map((point: { t: number, p: number }) => ({
-            time: point.t, // Unix timestamp
-            value: point.p  // Price (0-1)
+            time: point.t,
+            value: point.p
         }));
     } catch (err) {
         console.error("Error fetching CLOB history:", err);
@@ -496,8 +475,7 @@ async function fetchMarketPriceHistory(clobTokenId: string, interval: string = '
 
 async function getComments(eventId: string): Promise<EventComment[]> {
     // משתמשים בנתיב הפרוקסי שהגדרנו ב-Vite
-    const url = `/poly-comments?parent_entity_type=Event&parent_entity_id=${eventId}`;
-
+    const url = `${POLY_COMMENTS_API}?parent_entity_type=Event&parent_entity_id=${eventId}`;
     try {
         const res = await fetch(url);
         if (!res.ok) throw new Error(`Failed to fetch comments: ${res.statusText}`);
@@ -520,7 +498,8 @@ async function getComments(eventId: string): Promise<EventComment[]> {
 // Order Book
 
 async function fetchOrderBook(clobTokenId: string): Promise<Orderbook> {
-    const url = `/poly-clob/book?token_id=${clobTokenId}`;
+    // שימוש במשתנה POLY_CLOB_API במקום במחרוזת קבועה
+    const url = `${POLY_CLOB_API}/book?token_id=${clobTokenId}`;
 
     try {
         const res = await fetch(url);
@@ -534,11 +513,7 @@ async function fetchOrderBook(clobTokenId: string): Promise<Orderbook> {
                 const size = parseFloat(level.size);
                 const price = parseFloat(level.price);
                 total += size;
-                return {
-                    price,
-                    size,
-                    total
-                };
+                return { price, size, total };
             });
         };
 

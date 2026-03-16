@@ -3,8 +3,7 @@ import react from '@vitejs/plugin-react-swc'
 import svgr from "vite-plugin-svgr";
 
 export default defineConfig({
-	base: '/Positarget--Frontend/',
-	plugins: [react(), svgr()],
+	base: process.env.NODE_ENV === 'production' ? '/Positarget--Frontend/' : '/', plugins: [react(), svgr()],
 	server: {
 		proxy: {
 			'/poly-search': {
