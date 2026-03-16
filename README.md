@@ -1,3 +1,8 @@
+<img width="1432" height="1001" alt="image" src="https://github.com/user-attachments/assets/a7b7213e-46c1-4748-8c88-e4ceef372224" />
+<img width="1337" height="992" alt="image" src="https://github.com/user-attachments/assets/426832e6-b836-4cef-b7cb-f9898ecdfb44" />
+<img width="2564" height="2012" alt="image" src="https://github.com/user-attachments/assets/e36e24f2-abd6-4110-bacb-6e52f8a707be" />
+
+
 Positarget – Prediction Market Platform
 Positarget is a high-performance prediction market application inspired by Polymarket. It enables users to explore, analyze, and track real-time market data across various categories like Crypto, Politics, and Sports, utilizing the Polymarket Gamma API.
 
