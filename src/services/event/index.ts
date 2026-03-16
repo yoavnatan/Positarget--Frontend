@@ -40,7 +40,9 @@ function getDefaultFilter(): FilterBy {
     }
 }
 
-const service = (VITE_LOCAL === 'true') ? local : remote
+// const service = (VITE_LOCAL === 'true') ? local : remote
+
+const service = local
 export const eventService = { getEmptyEvent, getDefaultFilter, ...service }
 
 // Easy access to this service from the dev tools console
