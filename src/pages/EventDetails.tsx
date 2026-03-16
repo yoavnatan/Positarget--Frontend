@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import Money from '../assets/svg/money.svg?react'
+import DirArrow from '../assets/svg/dirarrow.svg?react'
 import Delete from '../assets/svg/delete.svg?react'
 import { useAppDispatch, useAppSelector } from '../store/store'
 import { RootState } from '../store/store'
@@ -22,6 +23,11 @@ import { LongTxt } from '../cmps/LongTxt'
 import { confirmAlert } from 'react-confirm-alert';
 import { userService } from '../services/user'
 import { User } from '../types/user.type'
+import { motion, useScroll, useSpring, useTransform } from 'framer-motion'
+import { NumberTicker } from '../cmps/NumberTicker'
+import CountUp from 'react-countup'
+import NumberFlow from '@number-flow/react'
+
 
 export function EventDetails() {
   const dispatch = useAppDispatch()
@@ -42,15 +48,22 @@ export function EventDetails() {
   const [shares, setShares] = useState<number | ''>()
   let isSport = [activeMarket?.outcomes[0]?.toLowerCase(), activeMarket?.outcomes[1]?.toLowerCase()].every(outcome => !['yes', 'no', 'up', 'down'].includes(outcome || ''))
   const marketOrderRef = useRef<HTMLDivElement | null>(null)
+  const [hoveredValue, setHoveredValue] = useState<number | null>(null);
+  const [periodStartValue, setPeriodStartValue] = useState<number | null>(null);
 
   useEffect(() => {
     if (activeMarket && activeMarket.clobTokenIds) {
-      // שליחת הטוקן הראשון מהמערך
       const tokenId = activeMarket.clobTokenIds[0];
 
       eventService.fetchMarketPriceHistory(tokenId, timeframe)
         .then(data => {
           setChartData(data);
+          // אם יש נתונים, נקודת ההתחלה היא הערך הראשון בגרף
+          if (data && data.length > 0) {
+            setPeriodStartValue(data[0].value * 100);
+          } else {
+            setPeriodStartValue(null);
+          }
         });
     }
   }, [activeMarket, timeframe]);
@@ -138,6 +151,7 @@ export function EventDetails() {
     }
   }
 
+
   function handleLimit(change: number) {
     let currentPrice = parseFloat(limitPrice) || 0
     currentPrice += (0.1 * change)
@@ -199,6 +213,14 @@ export function EventDetails() {
       }
     });
   }
+
+  function addAmount(amount: number) {
+    setOrderAmount(prev => {
+      const current = parseFloat(prev);
+      const base = isNaN(current) ? 0 : current;
+      return (base + amount).toString();
+    });
+  };
 
   function confirmOrder(title: string, message: string, onConfirm: () => Promise<void>) {
     confirmAlert({
@@ -368,6 +390,41 @@ export function EventDetails() {
   if (tradingDirection === 'buy') toWin = price > 0 ? (+orderAmount / price).toFixed(2) : '0';
   else toWin = price > 0 ? (+orderAmount * price).toFixed(2) : '0';
 
+
+  // חישוב אחוז השינוי
+  const getDisplayData = () => {
+    if (!chartData || chartData.length === 0) {
+      return { val: 0, change: null }
+    }
+
+    const sorted = [...chartData].sort((a, b) => a.time - b.time)
+
+    const first = sorted[0].value * 100
+    const last = sorted[sorted.length - 1].value * 100
+
+    const current = hoveredValue ?? last
+
+    const percentChange =
+      first !== 0 ? ((current - first) / first) * 100 : 0
+
+    return {
+      val: current,
+      change: {
+        isPos: percentChange >= 0,
+        text: `${percentChange >= 0 ? '+' : ''}${percentChange.toFixed(2)}%`
+      }
+    }
+  }
+  const display = getDisplayData();
+
+  // גלילה של הכותרת - שימוש ב-Framer Motion
+  const { scrollY } = useScroll()
+
+  // 2. ממפה את ה-Scale של התוכן הפנימי (1 ל-0.8)
+  const contentScale = useTransform(scrollY, [0, 100], [1, 0.8])
+
+  // 3. ממפה את ה-Opacity של ה-Border התחתון (0 ל-1)
+  const borderOpacity = useTransform(scrollY, [0, 100], [0, 1])
   // 
 
   return (
@@ -375,22 +432,37 @@ export function EventDetails() {
       <section className="event-details container">
         {/* <Link to="/event">Back to list</Link> */}
         {event &&
-          <header>
-            <div className="event-info flex">
-              <img src={event.imgUrl} alt={event.title} />
-              <div className="inner-info">
-                <div className="event-labels">
-                  {event.labels.slice(0, 2).map(label => (
-                    <span key={label} className="event-label">{label}</span>
-                  ))}
-                </div>
-                <div className="event-title">
-                  <Link to={`/event/${event._id}`}>{event.title}</Link>
+          <motion.header
+            className="sticky-header"
+            style={{
+              // אנחנו משתמשים ב-CSS Variable כדי להעביר את ה-Opacity ל-CSS
+              '--border-opacity': borderOpacity
+            } as any} // 'as any' נדרש לפעמים ב-TS עבור CSS Variables
+          >
+            {/* 1. הדיב הפנימי החדש שמתכווץ */}
+            <motion.div
+              className="header-content-wrapper"
+              style={{
+                scale: contentScale,
+                transformOrigin: 'top left', // מבטיח התכווצות לכיוון הפינה
+                width: '100%' // וודא שהוא תופס את כל הרוחב הזמין
+              }}
+            >
+              <div className="event-info flex">
+                <img src={event.imgUrl} alt={event.title} />
+                <div className="inner-info">
+                  <div className="event-labels">
+                    {event.labels.slice(0, 2).map(label => (
+                      <span key={label} className="event-label">{label}</span>
+                    ))}
+                  </div>
+                  <div className="event-title">
+                    <Link to={`/event/${event._id}`}>{event.title}</Link>
+                  </div>
                 </div>
               </div>
-            </div>
-            {/* <pre> {JSON.stringify(event, null, 2)} </pre> */}
-          </header>
+            </motion.div>
+          </motion.header>
         }
         <main>
           <div className="options flex">
@@ -408,8 +480,44 @@ export function EventDetails() {
               </>)}
           </div>
           <div className="chart-container">
+            <div className='current flex align-center' style={{ gap: '10px' }}>
+              <div className="flex align-center">
+                <NumberFlow
+                  value={display.val}
+                  format={{ maximumFractionDigits: 0 }}
+                  continuous={false}
+                  trend={true}
+                  className="ticker-display"
+                />
+                <span style={{ marginLeft: '4px', fontWeight: '600' }}>% chance</span>
+              </div>
 
-            <PriceChart data={chartData} />
+              {display.change && (
+                <div
+                  className="flex align-center"
+                  style={{
+                    color: display.change.isPos ? '#00aa5d' : '#ff4d4d',
+                    fontWeight: '600',
+                    fontSize: '0.8rem'
+                  }}
+                >
+                  {/* הוספת הסימן + או - מחוץ לטיקר כדי שלא ירצד */}
+                  <span style={{ marginInlineEnd: '5px', translate: '0 1px' }}>{display.change.isPos ? <DirArrow /> : <DirArrow style={{ rotate: '180deg' }} />}</span>
+
+                  <NumberFlow
+                    value={parseFloat(display.change.text.replace(/[+%-]/g, ''))}
+                    format={{
+                      maximumFractionDigits: 2,
+                      minimumFractionDigits: 2
+                    }}
+                    suffix="%"
+                    trend={true}
+                  />
+                </div>
+              )}
+            </div>
+
+            <PriceChart data={chartData} onHoverValue={setHoveredValue} />
 
             <div className="controls">
               <h4>$ {event?.volume.toLocaleString()} Vol.</h4>
@@ -585,12 +693,11 @@ export function EventDetails() {
                   </div>
                 )}
               {<div className="money-btns flex">
-                <button className="money-btn" onClick={() => setOrderAmount(prev => (parseFloat(prev) + 1).toString())}>+$1</button>
-                <button className="money-btn" onClick={() => setOrderAmount(prev => (parseFloat(prev) + 5).toString())}>+$5</button>
-                <button className="money-btn" onClick={() => setOrderAmount(prev => (parseFloat(prev) + 10).toString())}>+$10</button>
-                <button className="money-btn" onClick={() => setOrderAmount(prev => (parseFloat(prev) + 100).toString())}>+$100</button>
-                <button
-                  className="money-btn"
+                <button className="money-btn" onClick={() => addAmount(1)}>+$1</button>
+                <button className="money-btn" onClick={() => addAmount(5)}>+$5</button>
+                <button className="money-btn" onClick={() => addAmount(10)}>+$10</button>
+                <button className="money-btn" onClick={() => addAmount(100)}>+$100</button>
+                <button className="money-btn"
                   onClick={() => {
                     if (tradingDirection === 'buy') {
                       setOrderAmount(user?.cash ? user.cash.toFixed(2) : '0')
@@ -601,7 +708,8 @@ export function EventDetails() {
                   }}
                 >
                   Max
-                </button>              </div>}
+                </button>
+              </div>}
             </>
 
           ) : (

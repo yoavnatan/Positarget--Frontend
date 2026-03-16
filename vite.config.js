@@ -19,15 +19,13 @@ export default defineConfig({
 			'/poly-clob': {
 				target: 'https://clob.polymarket.com',
 				changeOrigin: true,
-				secure: false, // עוזר לעקוף בעיות תעודת אבטחה מקומיות
+				secure: false,
 				rewrite: (path) => path.replace(/^\/poly-clob/, ''),
-				configure: (proxy, _options) => {
-					proxy.on('proxyReq', (proxyReq, req, _res) => {
-						// מוודא שה-Host מועבר נכון
-						proxyReq.setHeader('Host', 'clob.polymarket.com');
-						// מוסיף User-Agent כדי שלא ניחסם כבוט
-						proxyReq.setHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-					});
+				onProxyReq: (proxyReq) => {
+					// דריסת Headers שגורמים ל-403
+					proxyReq.setHeader('Origin', 'https://polymarket.com');
+					proxyReq.setHeader('Referer', 'https://polymarket.com/');
+					proxyReq.setHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36');
 				},
 			},
 			'/poly-comments': {

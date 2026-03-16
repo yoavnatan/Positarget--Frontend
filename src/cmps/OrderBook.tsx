@@ -30,15 +30,21 @@ export function OrderBook(market: Market) {
     }, [market.id, selectedOutcomeIndex]);
 
     async function loadOrderBooks() {
-        setIsLoading(true)
-        isInitialLoad.current = true;
-        try {
-            setHasNoBook(false);
-            const books = await Promise.all(
-                market.clobTokenIds.map(id => eventService.fetchOrderBook(id))
-            );
+        if (!market.clobTokenIds) return;
 
-            const currentBook = books[selectedOutcomeIndex ?? 0];
+        setIsLoading(true);
+        isInitialLoad.current = true;
+        setHasNoBook(false);
+
+        try {
+            const tokenId = market.clobTokenIds[selectedOutcomeIndex ?? 0];
+
+            if (!tokenId) {
+                setHasNoBook(true);
+                return;
+            }
+
+            const currentBook = await eventService.fetchOrderBook(tokenId);
 
             if (!currentBook || (currentBook as any).error || (!currentBook.asks?.length && !currentBook.bids?.length)) {
                 setHasNoBook(true);
@@ -47,6 +53,7 @@ export function OrderBook(market: Market) {
                 return;
             }
 
+            // עיבוד הנתונים (מיון וחישוב Cumulative Total)
             const sortedAsks = [...(currentBook.asks || [])].sort((a, b) => a.price - b.price);
             const sortedBids = [...(currentBook.bids || [])].sort((a, b) => b.price - a.price);
 
@@ -64,10 +71,11 @@ export function OrderBook(market: Market) {
 
             setAsks(processedAsks);
             setBids(processedBids);
-            setIsLoading(false);
         } catch (err) {
             setHasNoBook(true);
-            console.error('Fetch failed');
+            console.error('Orderbook fetch error:', err);
+        } finally {
+            setIsLoading(false);
         }
     }
 

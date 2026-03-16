@@ -6,7 +6,9 @@ interface DataPoint {
     value: number;
 }
 
-export function PriceChart({ data }: { data: { time: number; value: number }[] }) {
+export function PriceChart({ data, onHoverValue }: {
+    data: { time: number; value: number }[]; onHoverValue?: (value: number | null) => void;
+}) {
     const wrapperRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -335,11 +337,13 @@ export function PriceChart({ data }: { data: { time: number; value: number }[] }
                 currentMouseX = null;
                 dot.style.display = 'none';
                 if (animationDone) pulse.style.display = 'block';
+                onHoverValue?.(null)
             } else {
                 currentMouseX = param.point.x;
                 pulse.style.display = 'none';
                 const seriesData = param.seriesData.get(series);
                 if (seriesData && 'value' in seriesData) {
+                    onHoverValue?.(seriesData.value as number);
                     const y = series.priceToCoordinate(seriesData.value as number);
                     if (y !== null) {
                         dot.style.display = 'block';

@@ -463,9 +463,9 @@ export async function searchEvents(searchTerm: string, limit: number = 200): Pro
  * מושכת היסטוריית מחירים עבור מרקט ספציפי
 רזולוציית הזמן (למשל '6h', '1h', '1d')
  */
-async function fetchMarketPriceHistory(clobTokenId: string, interval: string = 'all'): Promise<{ time: number, value: number }[]> {
+async function fetchMarketPriceHistory(clobTokenId: string, interval: string = ''): Promise<{ time: number, value: number }[]> {
     // שימוש ב-clobTokenId בתוך ה-URL
-    if (!interval) interval = 'all';
+    if (!interval) interval = '';
     const url = `/poly-clob/prices-history?market=${clobTokenId}&interval=${interval}`;
 
     try {
