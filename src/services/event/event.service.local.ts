@@ -12,13 +12,29 @@ import { FilterBy, Event, Market, EventComment, OrderbookLevel, Orderbook, PolyO
 import { polyImgs } from '../imgs';
 
 const STORAGE_KEY = 'event'
+// בדיקה כפולה - גם סביבת Vite וגם הכתובת בדפדפן
+const isProduction = import.meta.env.PROD || window.location.hostname.includes('github.io')
 
-const isProd = import.meta.env.PROD
+// אם אנחנו בגיטהאב, אנחנו חייבים פרוקסי. בלוקלי (אם אין לך Node) - גם כדאי שיהיה.
+const PROXY = isProduction ? 'https://api.allorigins.win/raw?url=' : ''
 
-const POLY_EVENTS_API = isProd ? 'https://gamma-api.polymarket.com' : '/poly-api'
-const POLY_CLOB_API = isProd ? 'https://clob.polymarket.com' : '/poly-clob'
-const POLY_SEARCH_API = isProd ? 'https://gamma-api.polymarket.com/public-search' : '/poly-search'
-const POLY_COMMENTS_API = isProd ? 'https://gamma-api.polymarket.com/comments' : '/poly-comments'
+const POLY_BASE = 'https://gamma-api.polymarket.com'
+
+const POLY_EVENTS_API = isProduction
+    ? `${PROXY}${encodeURIComponent(POLY_BASE)}`
+    : '/poly-api'
+
+const POLY_SEARCH_API = isProduction
+    ? `${PROXY}${encodeURIComponent(POLY_BASE + '/public-search')}`
+    : '/poly-search'
+
+const POLY_CLOB_API = isProduction
+    ? `${PROXY}${encodeURIComponent('https://clob.polymarket.com')}`
+    : '/poly-clob'
+
+const POLY_COMMENTS_API = isProduction
+    ? `${PROXY}${encodeURIComponent(POLY_BASE + '/comments')}`
+    : '/poly-comments'
 
 export const eventService = {
     query,
@@ -37,26 +53,24 @@ export const eventService = {
 
 window.cs = eventService
 
-
 async function query(filterBy: FilterBy, category: string = 'all', page: number = 0) {
     const sortBy = filterBy.sortField || 'volume'
 
-    // אם אנחנו ב-GitHub Pages, אין שרת Backend. 
-    // אנחנו חייבים למשוך נתונים ישירות מה-API של Polymarket.
-    if (isProd) {
-        console.log('Production mode: Fetching directly from Gamma API')
-        console.log('!!! PRODUCTION MODE ACTIVE - VERSION 2 !!!')
+    // בדיקה חסינת טעויות לגיטהאב
+    const isGithub = window.location.hostname.includes('github.io')
+
+    if (isProduction || isGithub) {
+        console.log('Running on GitHub/Production - fetching from Polymarket')
         return await fetchEvents(category, page, sortBy)
     }
 
-    // בלוקלי (isProd === false), נסה לפנות ל-Backend שלך
+    // רק אם אנחנו לא בגיטהאב, נסה לפנות ל-Backend
     try {
         const res = await fetch(`/api/event?txt=${filterBy.txt}&sortField=${sortBy}`)
         if (!res.ok) throw new Error('Local backend not responding')
         return await res.json()
     } catch (err) {
-        // אם ה-Backend הלוקלי כבוי או שיש שגיאה, נשתמש ב-API של פולימרקט כגיבוי
-        console.warn('Backend error, falling back to Polymarket API')
+        // Fallback למקרה שהשרת המקומי לא דלוק
         return await fetchEvents(category, page, sortBy)
     }
 }
@@ -378,9 +392,10 @@ export async function fetchEvents(categoryName?: string, page: number = 0, sortB
         "climate-science": "100267", "mentions": "100251"
     };
 
-    // שימוש במשתנה הדינמי במקום נתיב יחסי
-    let url = `${POLY_EVENTS_API}/events?active=true&closed=false&limit=${limit}&offset=${currentOffset}&order=volume&ascending=false`;
+    // בניית ה-URL הבסיסי
+    let url = `${POLY_EVENTS_API}/events?active=true&closed=false&limit=${limit}&offset=${currentOffset}&order=${sortBy === 'newest' ? 'created_at' : 'volume'}&ascending=false`;
 
+    // אם נבחרה קטגוריה, נוסיף tag_id
     if (categoryName && categoryName !== 'all') {
         const tagId = CATEGORY_MAP[categoryName.toLowerCase()];
         if (tagId) url += `&tag_id=${tagId}`;
@@ -389,24 +404,22 @@ export async function fetchEvents(categoryName?: string, page: number = 0, sortB
     try {
         const res = await fetch(url);
         if (!res.ok) throw new Error(`API Error: ${res.status}`);
-        const data = await res.json();
-        if (!data || data.length === 0) return [];
 
+        const text = await res.text();
+        const data = JSON.parse(text);
+
+        // כאן קורה המיזוג - אם אנחנו בדף הבית (all), אפשר למשוך עוד נתונים
         let events = processRawEvents(data);
 
-        const now = Date.now();
-        if (sortBy.toLowerCase() === 'volume') {
-            events.sort((a, b) => b.volume - a.volume);
-        } else if (sortBy.toLowerCase() === 'newest') {
-            events.sort((a, b) => Number(b.createdAt) - Number(a.createdAt));
-        } else if (sortBy.toLowerCase() === 'trending') {
+        // לוגיקת המיון שחזרה לקוד
+        if (sortBy.toLowerCase() === 'trending') {
+            const now = Date.now();
             events.sort((a, b) => {
-                const getHours = (time: number) => Math.max(1, (now - time) / (1000 * 60 * 60));
-                const scoreA = a.volume / getHours(typeof a.createdAt === 'number' ? a.createdAt : a.createdAt.getTime());
-                const scoreB = b.volume / getHours(typeof b.createdAt === 'number' ? b.createdAt : b.createdAt.getTime());
-                return scoreB - scoreA;
+                const getHours = (time: any) => Math.max(1, (now - (typeof time === 'number' ? time : new Date(time).getTime())) / (1000 * 60 * 60));
+                return (b.volume / getHours(b.createdAt)) - (a.volume / getHours(a.createdAt));
             });
         }
+
         return events;
     } catch (err) {
         console.error("Fetch failed:", err);
