@@ -379,7 +379,6 @@ export async function fetchEvents(categoryName?: string, page: number = 0, sortB
 
     // בניית ה-URL הבסיסי
     let url = `${POLY_EVENTS_API}/events?active=true&closed=false&limit=${limit}&offset=${currentOffset}&order=${sortBy === 'newest' ? 'created_at' : 'volume'}&ascending=false`;
-
     // אם נבחרה קטגוריה, נוסיף tag_id
     if (categoryName && categoryName !== 'all') {
         const tagId = CATEGORY_MAP[categoryName.toLowerCase()];

@@ -37,6 +37,7 @@ export function EventFilter({ filterBy, setFilterBy }: { filterBy: FilterBy, set
         setFilterBy(filterToEdit)
     }, [filterToEdit])
 
+
     useEffectUpdate(() => {
         const usedLabels = new Set<string>()
         const finalLabels: string[] = []
@@ -54,6 +55,7 @@ export function EventFilter({ filterBy, setFilterBy }: { filterBy: FilterBy, set
         })
 
         setLabels(finalLabels)
+        setFilterToEdit(prev => ({ ...prev, labels: [] }))
     }, [events])
 
     function clearTxtInput() {
