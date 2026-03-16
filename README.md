@@ -3,11 +3,13 @@ Positarget is a high-performance prediction market application inspired by Polym
 
 🚀 Live Demo
 View Live Project on GitHub Pages
+https://yoavnatan.github.io/Positarget--Frontend/
 
 🧠 Project Vision
-Developed as a final project for Coding Academy, Positarget bridges the gap between complex financial data and intuitive user experience. Leveraging my background in Finance (MBA) and Banking, the app focuses on data accuracy and clear visualization of market trends.
+Developed as an Independent project, Positarget bridges the gap between complex financial data and intuitive user experience. Leveraging my background in Finance (MBA) and Banking, the app focuses on data accuracy and clear visualization of market trends, with a high performative UX.
 
 🏗️ Tech Stack
+
 Frontend: React, TypeScript, Redux Toolkit (RTK)
 
 Styling: SCSS (Sass), CSS Modules, Responsive Design
@@ -15,8 +17,6 @@ Styling: SCSS (Sass), CSS Modules, Responsive Design
 Data: Polymarket Gamma API integration
 
 State Management: Complex state handling for real-time market filtering and search
-
-Infrastructure: Custom Node.js Proxy (to handle CORS challenges)
 
 🎨 Key Features
 Real-time Market Discovery: Browse and search active prediction markets via live API data.
@@ -44,12 +44,13 @@ Clone the repository:
 git clone https://github.com/yoavnatan/Positarget--Frontend.git
 Install dependencies:
 
-
 npm install
 Run development server:
 
-npm run dev
+npm run dev:local
+
 🚦 Features in Development
+
 [ ] User Profile & Favorite Markets (Persistence)
 
 [ ] Enhanced Chart Interactions (Tooltips & Historical Views)
