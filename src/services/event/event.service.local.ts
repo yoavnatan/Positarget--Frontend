@@ -56,22 +56,18 @@ window.cs = eventService
 async function query(filterBy: FilterBy, category: string = 'all', page: number = 0) {
     const sortBy = filterBy.sortField || 'volume'
 
-    // בדיקה חסינת טעויות לגיטהאב
-    const isGithub = window.location.hostname.includes('github.io')
-
-    if (isProduction || isGithub) {
-        console.log('Running on GitHub/Production - fetching from Polymarket')
-        return await fetchEvents(category, page, sortBy)
+    // אם זה GitHub Pages או Production – תמיד Polymarket
+    if (window.location.hostname.includes('github.io') || import.meta.env.PROD) {
+        return fetchEvents(category, page, sortBy)
     }
 
-    // רק אם אנחנו לא בגיטהאב, נסה לפנות ל-Backend
+    // רק בלוקאלי ננסה backend
     try {
         const res = await fetch(`/api/event?txt=${filterBy.txt}&sortField=${sortBy}`)
-        if (!res.ok) throw new Error('Local backend not responding')
+        if (!res.ok) throw new Error()
         return await res.json()
-    } catch (err) {
-        // Fallback למקרה שהשרת המקומי לא דלוק
-        return await fetchEvents(category, page, sortBy)
+    } catch {
+        return fetchEvents(category, page, sortBy)
     }
 }
 // async function getEventsByIds(eventIds: string[]): Promise<Event[]> {
