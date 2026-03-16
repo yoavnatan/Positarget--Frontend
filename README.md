@@ -41,15 +41,13 @@ src/
 🛠️ Installation & Setup
 Clone the repository:
 
-Bash
 git clone https://github.com/yoavnatan/Positarget--Frontend.git
 Install dependencies:
 
-Bash
+
 npm install
 Run development server:
 
-Bash
 npm run dev
 🚦 Features in Development
 [ ] User Profile & Favorite Markets (Persistence)
