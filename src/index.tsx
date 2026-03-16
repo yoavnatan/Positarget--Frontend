@@ -17,7 +17,7 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
 	<Provider store={store}>
-		<Router>
+		<Router basename="/Positarget--Frontend">
 			<RootCmp />
 		</Router>
 	</Provider>
