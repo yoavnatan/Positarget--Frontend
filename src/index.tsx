@@ -1,7 +1,8 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 
-import { BrowserRouter as Router } from 'react-router-dom'
+// import { BrowserRouter as Router } from 'react-router-dom'
+import { HashRouter as Router } from 'react-router-dom'
 import { Provider } from 'react-redux'
 
 
@@ -17,7 +18,8 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
 	<Provider store={store}>
-		<Router basename={import.meta.env.BASE_URL} >
+		<Router >
+			{/* // basename={import.meta.env.BASE_URL} > */}
 			<RootCmp />
 		</Router>
 	</Provider>

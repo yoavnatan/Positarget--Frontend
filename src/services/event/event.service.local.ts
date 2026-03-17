@@ -38,6 +38,8 @@ export const eventService = {
     fetchOrderBook,
     deleteEventMsg,
     fetchMarketById,
+    getPerformance,
+
 }
 
 window.cs = eventService
@@ -282,7 +284,7 @@ interface RawMarket {
     closed?: boolean;
 }
 
-function processRawEvents(combined: any[]): Event[] {
+function processRawEvents(combined: any[], forcedCategory?: string): Event[] {
     if (!combined.length) return [];
 
     const uniqueMap = new Map<string, any>();
@@ -312,8 +314,6 @@ function processRawEvents(combined: any[]): Event[] {
                 outcomes: outcomesList,
                 outcomePrices: prices,
                 clobTokenIds: Array.isArray(clobTokenIds) ? clobTokenIds : [],
-
-                // נתונים מלאים מה-Market API
                 description: m.description || "",
                 lastTradePrice: m.lastTradePrice,
                 bestBid: m.bestBid,
@@ -344,9 +344,13 @@ function processRawEvents(combined: any[]): Event[] {
             ? ev.tags.map((t: any) => (typeof t === 'string' ? t : t.label)).filter(Boolean)
             : [];
 
-        const primaryCat = categories.find(c =>
-            eventTags.some(tag => tag.toLowerCase() === c.toLowerCase())
-        ) || eventTags[0] || 'General';
+        // לוגיקת בחירת קטגוריה:
+        // אם הועברה קטגוריה ב-forcedCategory (מהלחיצה ב-UI), נשתמש בה.
+        // אחרת נחפש התאמה בתגיות או נשתמש בראשונה שקיימת.
+        const primaryCat = (forcedCategory && forcedCategory.toLowerCase() !== 'all')
+            ? forcedCategory
+            : categories.find(c => eventTags.some(tag => tag.toLowerCase() === c.toLowerCase()))
+            || eventTags[0] || 'General';
 
         const createdAt = ev.createdAt ? new Date(ev.createdAt).getTime() : Date.now();
         const endDate = ev.endDate ? new Date(ev.endDate).getTime() : Date.now() + 86400000;
@@ -372,15 +376,25 @@ export async function fetchEvents(categoryName?: string, page: number = 0, sortB
     const currentOffset = page * limit;
 
     const CATEGORY_MAP: Record<string, string> = {
-        "politics": "2", "sports": "100639", "crypto": "21", "finance": "120",
-        "geopolitics": "100265", "earnings": "100262", "tech": "1401",
-        "culture": "596", "world": "1", "economy": "100260",
-        "climate-science": "100267", "mentions": "100251"
+        "politics": "2",
+        "crypto": "21",
+        "sports": "100639",
+        "economy": "100260",
+        "business": "100260",
+        "finance": "100260",
+        "science": "100267",
+        "climate": "100267",
+        "culture": "596",
+        "entertainment": "596",
+        "tech": "1401",
+        "geopolitics": "100265",
+        "world": "1",
+        "mentions": "100251",
+        "earnings": "100262"
     };
 
-    // בניית ה-URL הבסיסי
     let url = `${POLY_EVENTS_API}/events?active=true&closed=false&limit=${limit}&offset=${currentOffset}&order=${sortBy === 'newest' ? 'created_at' : 'volume'}&ascending=false`;
-    // אם נבחרה קטגוריה, נוסיף tag_id
+
     if (categoryName && categoryName !== 'all') {
         const tagId = CATEGORY_MAP[categoryName.toLowerCase()];
         if (tagId) url += `&tag_id=${tagId}`;
@@ -390,13 +404,11 @@ export async function fetchEvents(categoryName?: string, page: number = 0, sortB
         const res = await fetch(url);
         if (!res.ok) throw new Error(`API Error: ${res.status}`);
 
-        const text = await res.text();
-        const data = JSON.parse(text);
+        const data = await res.json();
 
-        // כאן קורה המיזוג - אם אנחנו בדף הבית (all), אפשר למשוך עוד נתונים
-        let events = processRawEvents(data);
+        // שליחת categoryName כ-forcedCategory כדי שהאירועים יתויגו נכון ב-UI
+        let events = processRawEvents(data, categoryName);
 
-        // לוגיקת המיון שחזרה לקוד
         if (sortBy.toLowerCase() === 'trending') {
             const now = Date.now();
             events.sort((a, b) => {
@@ -567,5 +579,67 @@ async function fetchMarketById(marketId: string): Promise<Market | null> {
     } catch (err) {
         console.error(`Error fetching market ${marketId}:`, err)
         return null
+    }
+}
+
+
+
+
+
+
+export async function getPerformance(portfolio: any[], timeRange: string) {
+    if (!portfolio || !portfolio.length) return { history: [], stats: null }
+
+    const historyPromises = portfolio.map(async (pos) => {
+        const market = await eventService.fetchMarketById(pos.marketId)
+        if (!market || !market.clobTokenIds?.[0]) return null
+
+        const history = await eventService.fetchMarketPriceHistory(market.clobTokenIds[0], '1d')
+
+        // נמצא את המחיר הנוכחי מההיסטוריה (הנקודה האחרונה)
+        const latestPrice = history.length > 0 ? history[history.length - 1].value : 0
+
+        return {
+            shares: pos.shares,
+            avgPriceInDollars: pos.avgPrice / 100,
+            latestPrice,
+            history
+        }
+    })
+
+    const results = (await Promise.all(historyPromises)).filter((pos): pos is NonNullable<typeof pos> => !!pos)
+
+    let totalCostBasis = 0  // כמה כסף עלה לי לקנות הכל
+    let totalCurrentValue = 0 // כמה הכל שווה עכשיו בשוק
+    const timeMap: Record<number, number> = {}
+
+    results.forEach(pos => {
+        // 1. חישוב עלות (מה שמופיע לך בטבלה כ-Avg Price)
+        totalCostBasis += pos.shares * pos.avgPriceInDollars
+
+        // 2. חישוב שווי נוכחי (מה שמופיע לך בטבלה כ-Value)
+        totalCurrentValue += pos.shares * pos.latestPrice
+
+        // 3. בניית הגרף
+        pos.history.forEach((point: any) => {
+            timeMap[point.time] = (timeMap[point.time] || 0) + (pos.shares * point.value)
+        })
+    })
+
+    const history = Object.entries(timeMap)
+        .map(([time, value]) => ({ time: Number(time), value }))
+        .sort((a, b) => a.time - b.time)
+
+    // החישוב הסופי - זה מה שיופיע ב-Summary
+    const totalPnl = totalCurrentValue - totalCostBasis
+    const pnlPercent = totalCostBasis > 0 ? (totalPnl / totalCostBasis) * 100 : 0
+
+    return {
+        history,
+        stats: {
+            currentTotalValue: totalCurrentValue,
+            totalPnl,
+            pnlPercent
+        }
     }
 }

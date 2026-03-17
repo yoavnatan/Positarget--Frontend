@@ -72,3 +72,137 @@
     color: var(--pt-gray);
     margin-top: 2em;
 }
+
+
+/*  chart */
+.portfolio-top-layout {
+    width: 100%;
+    /* רוחב מלא כפי שביקשת */
+    background: #fff;
+    padding: 30px;
+    border-radius: 20px;
+    border: 1px solid #edf0f2;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+    margin-bottom: 40px;
+    display: flex;
+    flex-direction: column;
+    /* אחד מתחת לשני בתוך המלבן */
+    gap: 20px;
+}
+
+.summary-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.label-main {
+    font-size: 14px;
+    color: #6d7278;
+    font-weight: 500;
+}
+
+.equity-value {
+    font-size: 42px;
+    /* גדול ומרשים */
+    font-weight: 700;
+    color: #000;
+    letter-spacing: -1px;
+}
+
+/* הבאדג' המעוגל שאהבת */
+.pnl-badge-modern {
+    margin-top: 8px;
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    width: fit-content;
+    font-size: 14px;
+}
+
+.pnl-badge-modern.pos {
+    background: #e6f6ef;
+    color: #00aa5d;
+}
+
+.pnl-badge-modern.neg {
+    background: #fdeaea;
+    color: #ff4d4d;
+}
+
+.chart-wrapper {
+    width: 100%;
+    height: 250px;
+    /* גובה קבוע כדי שלא ייעלם */
+    position: relative;
+}
+
+.time-filters {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    padding-top: 15px;
+    border-top: 1px solid #f1f3f5;
+    position: relative;
+    z-index: 10;
+}
+
+.filter-btn {
+    background: #f4f6f8;
+    border: none;
+    padding: 6px 16px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    color: #5f6673;
+    transition: 0.2s;
+}
+
+.filter-btn.active {
+    background: #000;
+    color: #fff;
+}
+
+/* מבטל את המסגרת הכחולה בלחיצה על הגרף */
+.recharts-wrapper,
+.recharts-surface {
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+    /* מונע הבהוב כחול בניידים */
+}
+
+/* אם יש אלמנטים פנימיים שמקבלים פוקוס */
+.recharts-layer:focus {
+    outline: none;
+}
+
+/* ביטול המסגרת הכחולה על כל מרכיבי הגרף */
+.recharts-wrapper *,
+.recharts-surface,
+.recharts-surface *,
+.recharts-responsive-container,
+svg {
+    outline: none !important;
+    box-shadow: none !important;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* ספציפית למיקוד (Focus) שקורה בזמן לחיצה */
+.recharts-wrapper:focus,
+.recharts-surface:focus,
+.recharts-layer:focus {
+    outline: none !important;
+}
+
+.portfolio .deposit-btn {
+    padding: .5em .8em;
+    font-size: revert;
+
+}
+
+.positions.container {
+    padding-inline: .5em;
+}
