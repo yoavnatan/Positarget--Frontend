@@ -14,6 +14,7 @@ export const eventService = {
     getComments,
     fetchOrderBook,
     deleteEventMsg,
+
 }
 
 async function query(filterBy = { txt: '' }) {

@@ -37,6 +37,7 @@ export const eventService = {
     getComments,
     fetchOrderBook,
     deleteEventMsg,
+    fetchMarketById,
 }
 
 window.cs = eventService
@@ -521,5 +522,50 @@ async function fetchOrderBook(clobTokenId: string): Promise<Orderbook> {
     } catch (err) {
         console.error("Orderbook fetch error:", err);
         return { bids: [], asks: [] };
+    }
+}
+
+// market By Id
+
+async function fetchMarketById(marketId: string): Promise<Market | null> {
+    // 1. הגדרת כתובת היעד המקורית
+    const targetUrl = `https://gamma-api.polymarket.com/markets/${marketId}`
+
+    // 2. בחירת הפרוקסי המתאים לפי הסביבה
+    // ב-GitHub Pages (isProduction) נשתמש ב-AllOrigins כי הוא לא דורש אישור ידני מהמשתמש
+    // ב-Local נשתמש ב-Vite Proxy שהגדרת בסרוויס (POLY_EVENTS_API)
+    const url = isProduction
+        ? `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`
+        : `${POLY_EVENTS_API}/markets/${marketId}`
+
+    try {
+        const res = await fetch(url)
+        if (!res.ok) throw new Error(`Market not found: ${res.status}`)
+
+        const raw: any = await res.json()
+
+        // עיבוד נתונים (שימוש ב-JSON.parse למקרה שה-API מחזיר מחרוזת)
+        const outcomes = typeof raw.outcomes === 'string' ? JSON.parse(raw.outcomes) : raw.outcomes
+        const rawPrices = typeof raw.outcomePrices === 'string' ? JSON.parse(raw.outcomePrices) : raw.outcomePrices
+        const clobTokenIds = typeof raw.clobTokenIds === 'string' ? JSON.parse(raw.clobTokenIds) : raw.clobTokenIds
+
+        const prices = Array.isArray(rawPrices)
+            ? rawPrices.map((p: string) => Math.round(parseFloat(p) * 100))
+            : []
+
+        return {
+            id: raw.id,
+            // חילוץ ה-ID של האירוע (Parent) - ב-Gamma API זה לרוב activeId או questionId
+            eventId: raw.activeId || raw.eventId || raw.questionId || '',
+            conditionId: raw.conditionId,
+            question: raw.question,
+            outcomePrices: prices,
+            outcomes: Array.isArray(outcomes) ? outcomes : ["Yes", "No"],
+            clobTokenIds: Array.isArray(clobTokenIds) ? clobTokenIds : [],
+            description: raw.description || ""
+        }
+    } catch (err) {
+        console.error(`Error fetching market ${marketId}:`, err)
+        return null
     }
 }

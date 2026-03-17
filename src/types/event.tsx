@@ -1,7 +1,8 @@
 import { User } from "./user.type"
 
 export interface Market { // השוק הספציפי בתוך האירוע
-    id: string;           // ה-conditionId
+    id: string; // ה-conditionId
+    eventId?: string;
     question: string;
     outcomePrices: number[]; // ["0.55", "0.45"]
     outcomes: string[];      // ["Yes", "No"]

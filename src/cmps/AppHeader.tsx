@@ -114,6 +114,15 @@ export function AppHeader() {
 		navigate(`/search?q=&sort=${sortBy}`)
 	}
 
+	function getPorfolioSum() {
+		if (!user?.portfolio) return 0
+		const positionsSum = user.portfolio.reduce((acc, position) => {
+			const positionValue = position.shares * position.avgPrice / 100
+			return acc + positionValue
+		}, 0)
+		return positionsSum + (user.cash || 0)
+	}
+
 	return (
 		<header className="app-header full">
 			<div className="inner-container">
@@ -161,14 +170,17 @@ export function AppHeader() {
 
 					{user && (
 						<div className="user-info">
-							<div className="info-item flex">
-								<h5>Portfolio</h5>
-								<h5 className="sum">$0.00</h5>
-							</div>
-							<div className="info-item flex">
-								<h5>Cash</h5>
-								<h5 className='sum'>${user.cash?.toFixed(2) || '0.00'}</h5>
-							</div>
+							<Link to="/portfolio">
+								<div className="info-item flex">
+									<h5>Portfolio</h5>
+									<h5 className="sum">${getPorfolioSum() || '0.00'}</h5>
+								</div>
+							</Link>
+							<Link to="/portfolio">
+								<div className="info-item flex">
+									<h5>Cash</h5>
+									<h5 className='sum'>${user.cash?.toFixed(2) || '0.00'}</h5>
+								</div></Link>
 							<div className="signup-link" onClick={() => dispatch(setModalType('DEPOSIT'))}>Deposit</div>
 							<div className="bell info-item" ref={buttonRef} onClick={(ev) => {
 								ev.preventDefault()

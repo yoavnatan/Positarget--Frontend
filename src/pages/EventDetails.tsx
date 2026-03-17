@@ -17,7 +17,7 @@ import { EventComment } from '../types/event'
 import { getAvatarStyle, timeAgo } from '../services/util.service'
 import * as Select from '@radix-ui/react-select'
 import { ChevronDownIcon } from '@radix-ui/react-icons'
-import { setSelectedMarketId, setSelectedOutcome, updateUser } from '../store/slices/user.slice'
+import { setSelectedMarketId, setSelectedOutcome, setTradingDirection, updateUser } from '../store/slices/user.slice'
 import { OrderBook } from '../cmps/OrderBook'
 import { LongTxt } from '../cmps/LongTxt'
 import { confirmAlert } from 'react-confirm-alert';
@@ -33,7 +33,7 @@ export function EventDetails() {
   const dispatch = useAppDispatch()
   const { eventId } = useParams()
   const { event } = useAppSelector((state) => state.eventModule)
-  const { user, selectedMarketId } = useAppSelector((state: RootState) => state.userModule)
+  const { user, selectedMarketId, tradingDirection } = useAppSelector((state: RootState) => state.userModule)
   const { selectedOutcome } = useAppSelector((state: RootState) => state.userModule)
   const [activeMarket, setActiveMarket] = useState<Market | null>(null)
   const [chartData, setChartData] = useState<{ time: number, value: number }[]>([]);
@@ -42,7 +42,7 @@ export function EventDetails() {
   const [msgs, setMsgs] = useState<Msg[]>([])
   const [newMsg, setNewMsg] = useState('')
   const [tradingMethod, setTradingMethod] = useState<'market' | 'limit'>('market')
-  const [tradingDirection, setTradingDirection] = useState<'buy' | 'sell'>('buy')
+  // const [tradingDirection, setTradingDirection] = useState<'buy' | 'sell'>('buy')
   const [orderAmount, setOrderAmount] = useState<string>('')
   const [limitPrice, setLimitPrice] = useState<string>('')
   const [shares, setShares] = useState<number | ''>()
@@ -51,6 +51,7 @@ export function EventDetails() {
   const [hoveredValue, setHoveredValue] = useState<number | null>(null);
   const [periodStartValue, setPeriodStartValue] = useState<number | null>(null);
 
+  console.log(tradingDirection)
   useEffect(() => {
     if (activeMarket && activeMarket.clobTokenIds) {
       const tokenId = activeMarket.clobTokenIds[0];
@@ -73,6 +74,7 @@ export function EventDetails() {
     return () => {
       dispatch(setSelectedOutcome(''))
       dispatch(setSelectedMarketId(null))
+      dispatch(setTradingDirection('buy'))
     }
   }, [])
 
@@ -250,7 +252,13 @@ export function EventDetails() {
   function onPlaceOrder(outcomeIdx: number | null) {
     if (!user) return dispatch(setModalType('AUTH'))
     if (outcomeIdx === null || !activeMarket) return
-
+    const priceInCents = activeMarket.outcomePrices[outcomeIdx]
+    if (priceInCents === 0 || priceInCents === 100) {
+      return dispatch(setMsg({
+        txt: 'Market is currently closed or resolved (0¢ / 100¢)',
+        type: 'error'
+      }))
+    }
     // וולידציה של אינפוט (עם האנימציה)
     if (!orderAmount || +orderAmount <= 0) {
       return triggerShakeEffect()
@@ -298,6 +306,7 @@ export function EventDetails() {
       } else {
         // יצירת פוזיציה חדשה
         updatedPortfolio.push({
+          eventId: eventId,
           marketId: activeMarket!.id,
           outcome: outcomeName,
           shares: sharesToBuy,
@@ -624,8 +633,8 @@ export function EventDetails() {
       <section className="trading-section container">
         <header className="trading-header flex justify-between align-center">
           <div className="trading-dirs flex">
-            <div className={`trading-dir ${tradingDirection === 'buy' ? "active" : ""}`} onClick={() => setTradingDirection('buy')}>Buy</div>
-            <div className={`trading-dir ${tradingDirection === 'sell' ? "active" : ""}`} onClick={() => setTradingDirection('sell')}>Sell</div>
+            <div className={`trading-dir ${tradingDirection === 'buy' ? "active" : ""}`} onClick={() => dispatch(setTradingDirection('buy'))}>Buy</div>
+            <div className={`trading-dir ${tradingDirection === 'sell' ? "active" : ""}`} onClick={() => dispatch(setTradingDirection('sell'))}>Sell</div>
           </div>
           <div className="trading-method">
             <Select.Root

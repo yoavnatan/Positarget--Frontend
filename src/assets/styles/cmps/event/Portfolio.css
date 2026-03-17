@@ -1,0 +1,74 @@
+.portfolio.container {
+    margin-top: 1em;
+}
+
+.position-raw,
+.positions-header {
+    display: grid;
+    grid-template-columns: 30% repeat(6, 1fr);
+    gap: 10px;
+    border-bottom: 1px solid var(--border-gray);
+    max-height: min-content;
+}
+
+.position-raw {
+    position: relative;
+    color: var(--pt-black2);
+    font-family: izmir-light, sans-serif;
+    padding: .5em 0;
+}
+
+.position-raw:nth-child(even) {
+    background-color: var(--pt-gray-hover);
+}
+
+.position-raw:nth-child(odd) {
+    background-color: var(--pt-gray-text-button);
+}
+
+.position-raw .event-name {
+    cursor: pointer;
+
+    &:hover {
+        text-decoration: underline;
+    }
+}
+
+
+.position-raw .sell-btn {
+    position: absolute;
+    right: 10px;
+    top: 5px;
+    padding: 4px 8px;
+    background-color: var(--button-red);
+    color: var(--pt-black2);
+    border-radius: 4px;
+    font-size: .8em;
+    cursor: pointer;
+
+    &:hover {
+        background-color: var(--button-red-hover);
+        color: var(--pt-white);
+    }
+}
+
+
+
+.positions-header {
+    margin-top: 1em;
+    padding-bottom: .2em;
+    border-bottom: 1px solid var(--border-gray);
+    font-size: .8em;
+    color: var(--pt-gray);
+}
+
+.positions-list {
+    display: grid;
+    /* gap: 10px; */
+}
+
+.empty-portfolio {
+    text-align: center;
+    color: var(--pt-gray);
+    margin-top: 2em;
+}

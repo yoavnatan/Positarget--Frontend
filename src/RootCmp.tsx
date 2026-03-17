@@ -20,6 +20,7 @@ import { Modal } from './cmps/Modal'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search } from './pages/Search'
 import { DepositModal } from './cmps/DepositModal'
+import { Portfolio } from './pages/Portfolio'
 
 export function RootCmp() {
     const { isAuthShown, modalType } = useAppSelector((state) => state.systemModule)
@@ -68,6 +69,7 @@ export function RootCmp() {
                     <Route path="event/:eventId" element={<EventDetails />} />
                     <Route path="user/:id" element={<UserDetails />} />
                     <Route path="admin" element={<AdminIndex />} />
+                    <Route path="portfolio" element={<Portfolio />} />
                 </Routes>
             </main>
             <AppFooter />
