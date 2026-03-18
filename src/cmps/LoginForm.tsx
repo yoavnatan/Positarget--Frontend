@@ -15,6 +15,11 @@ export function LoginForm({ onLogin, isSignup }: LoginFormProps) {
         onLogin(credentials)
     }
 
+    function onGuestMode() {
+        const guestCredentials = userService.getGuestCredentials()
+        onLogin(guestCredentials)
+    }
+
     return (
         <form className="login-form" onSubmit={handleSubmit}>
             <h1>Welcome</h1>
@@ -45,6 +50,7 @@ export function LoginForm({ onLogin, isSignup }: LoginFormProps) {
                 required
             />}
             <button type="submit" className="signup-link">{isSignup ? 'Signup' : 'Login'}</button>
+            <button type="button" className="signup-link guest" onClick={onGuestMode}>I'm a Guest</button>
         </form>
     )
 }

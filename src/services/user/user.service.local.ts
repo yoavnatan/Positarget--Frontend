@@ -15,7 +15,11 @@ export const userService = {
     getLoggedinUser,
     saveLoggedinUser,
     getEmptyCredentials,
+    getGuestCredentials,
 }
+
+
+createGuestUser()
 
 async function getUsers() {
     const users: User[] = await storageService.query('user')
@@ -114,3 +118,25 @@ function getEmptyCredentials() {
         email: ''
     }
 }
+
+function getGuestCredentials() {
+    return {
+        username: 'guest',
+        password: 'guest',
+        email: 'Guest'
+    }
+}
+
+async function createGuestUser() {
+    const guestUser: UserCred = {
+        username: 'guest',
+        password: 'guest',
+        email: 'Guest',
+    }
+    const users: User[] = await storageService.query('user')
+    const existingGuest = users.find(user => user.username === guestUser.username)
+    if (existingGuest) return
+    const user = await signup(guestUser)
+    return user
+}
+

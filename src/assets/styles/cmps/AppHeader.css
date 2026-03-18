@@ -199,6 +199,14 @@
     &:active {
         transform: scale(0.97);
     }
+
+    &.guest {
+        background-color: rgb(10, 128, 139);
+
+        &:hover {
+            background-color: rgb(7, 117, 127);
+        }
+    }
 }
 
 

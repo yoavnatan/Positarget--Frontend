@@ -44,6 +44,10 @@ export function LoginSignup() {
             })
     }
 
+    function onGuestMode() {
+
+    }
+
     return (
         <>
             <div className={`login-page ${isSignup ? 'signup' : ''}`}>
@@ -58,6 +62,7 @@ export function LoginSignup() {
                             'New user? Signup here'
                         }
                     </a >
+
                 </div>
             </div >
         </>
