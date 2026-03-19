@@ -30,6 +30,8 @@ export function RootCmp() {
         dispatch(setModalType(null))
     }
 
+
+
     return (
         <div className="main-container">
             <AnimatePresence>

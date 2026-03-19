@@ -4,7 +4,7 @@ type RequestData = Record<string, unknown> | null | unknown // unkknow is used t
 
 const BASE_URL = import.meta.env.PROD
     ? '/api/'
-    : '//localhost:3030/api/'
+    : '/api/' // dev proxy points to http://localhost:3030/api
 
 const axios = Axios.create({ withCredentials: true })
 

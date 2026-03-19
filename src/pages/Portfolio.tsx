@@ -36,7 +36,7 @@ export function Portfolio() {
 
         setIsLoading(true)
         try {
-            // 1. נתונים חיים לטבלה ולשורה האחרונה בגרף
+            // 1. העשרת הפוזיציות בנתוני שוק
             const enriched = await Promise.all(
                 user.portfolio.map(async (pos): Promise<EnrichedPosition> => {
                     const market = await eventService.fetchMarketById(pos.marketId)
@@ -49,6 +49,7 @@ export function Portfolio() {
             )
             setEnrichedPortfolio(enriched)
 
+            // 2. חישוב ערכי Equity נוכחיים
             let livePositionsValue = 0
             let totalCost = 0
             enriched.forEach(pos => {
@@ -63,34 +64,57 @@ export function Portfolio() {
             const totalPnl = livePositionsValue - totalCost
             const pnlPercent = totalCost > 0 ? (totalPnl / totalCost) * 100 : 0
 
-            // 2. טיפול בהיסטוריה למניעת זיגזג
+            // 3. משיכת היסטוריה (מהפונקציה הלוקלית שמעדכנת את GitHub Pages)
             const performance = await eventService.getPerformance(user.portfolio, timeRange)
             const rawEvents: any[] = performance?.history || []
 
-            // מיון כרונולוגי קשיח
+            // 4. מיון כרונולוגי
             const sortedEvents = [...rawEvents].sort((a, b) => {
-                const timeA = new Date(a.timestamp || a.time).getTime()
-                const timeB = new Date(b.timestamp || b.time).getTime()
-                return timeA - timeB
+                const tA = a.timestamp || a.time || 0
+                const tB = b.timestamp || b.time || 0
+                return tA - tB
             })
 
-            const marketValues: Record<string, number> = {}
             const history: any[] = []
+            let lastAddedTimestamp = 0
+            const THIRTY_MINUTES_MS = 30 * 60 * 1000 // הגדרת הדילול
 
+            // --- נקודת התחלה (Cost Basis) ---
+            if (totalCost > 0) {
+                history.push({
+                    name: 'start',
+                    date: 'Purchase',
+                    value: Number((totalCost + currentCash).toFixed(2))
+                })
+            }
+
+            const marketValues: Record<string, number> = {}
+
+            // 5. לופ בניית היסטוריה עם לוגיקת דילול
             sortedEvents.forEach((event, index) => {
                 const mId = event.marketId || 'default'
-                // וידוא שהערך הוא בדולרים (חלקי 100)
                 const val = event.value > 100 ? event.value / 100 : event.value
-
                 marketValues[mId] = val
 
-                // חישוב שווי הפוזיציות המצטבר באותו רגע
-                const positionsValueAtTime = Object.values(marketValues).reduce((sum, v) => sum + v, 0)
+                const rawTime = event.timestamp || event.time
+                const timestamp = rawTime < 10000000000 ? rawTime * 1000 : rawTime
 
-                // הוספת ה-Cash רק פעם אחת לכל נקודה
+                // לוגיקת הדילול:
+                // אנחנו מכניסים נקודה רק אם עברו 30 דקות מהנקודה הקודמת שאישרנו.
+                // חריג: תמיד מאשרים את הנקודה האחרונה במערך כדי שהגרף יגיע עד הסוף.
+                const isLastEvent = index === sortedEvents.length - 1
+                if (!isLastEvent && (timestamp - lastAddedTimestamp < THIRTY_MINUTES_MS)) {
+                    return
+                }
+
+                const eventTime = new Date(timestamp)
+                if (eventTime.getFullYear() < 2024) return // הגנה מ-1970
+
+                lastAddedTimestamp = timestamp // מעדכנים את זמן הנקודה האחרונה שאושרה
+
+                const positionsValueAtTime = Object.values(marketValues).reduce((sum, v) => sum + v, 0)
                 const totalEquityAtTime = positionsValueAtTime + currentCash
 
-                const eventTime = new Date(event.timestamp || event.time)
                 history.push({
                     name: index.toString(),
                     date: eventTime.toLocaleDateString() + ' ' + eventTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -98,7 +122,7 @@ export function Portfolio() {
                 })
             })
 
-            // 3. הוספת נקודת ה-LIVE המעודכנת ביותר
+            // 6. נקודת LIVE סופית
             const now = new Date()
             history.push({
                 name: 'live',
@@ -106,24 +130,20 @@ export function Portfolio() {
                 value: Number(liveTotalEquity.toFixed(2))
             })
 
-            // ניקוי כפילויות אחרון אם בטעות נוצרו שתי נקודות על אותו זמן (למשל live ואירוע אחרון)
+            // 7. ניקוי כפילויות תאריכים (ליתר ביטחון)
             const uniqueHistory = history.filter((v, i, a) => a.findIndex(t => t.date === v.date) === i)
-
-            if (uniqueHistory.length === 1) {
-                uniqueHistory.unshift({ ...uniqueHistory[0], name: '-1' })
-            }
 
             setPerfData({
                 stats: { currentTotalValue: liveTotalEquity, totalPnl, pnlPercent },
                 history: uniqueHistory
             })
+
         } catch (err) {
             console.error("Portfolio load error:", err)
         } finally {
             setIsLoading(false)
         }
     }
-
     function onSell(ev: React.MouseEvent, eventId?: string, outcome?: string) {
         ev.stopPropagation()
         dispatch(setTradingDirection('sell'))
@@ -203,7 +223,7 @@ export function Portfolio() {
                                 <div className="event-name" onClick={() => navigate(`/event/${position.eventId}`)}>{position.question}</div>
                                 <div>{position.outcome}</div>
                                 <div>{position.shares?.toFixed(0)}</div>
-                                <div>{position.avgPrice}¢</div>
+                                <div>{position.avgPrice.toFixed(2)}¢</div>
                                 <div>{position.currentPrice ? `${position.currentPrice}¢` : '--'}</div>
                                 <div>{position.currentPrice ? `$${(position.currentPrice / 100 * position.shares).toFixed(2)}` : '--'}</div>
                                 <div style={{ color: pnl >= 0 ? '#00aa5d' : '#ff4d4d', fontWeight: 'bold' }}>

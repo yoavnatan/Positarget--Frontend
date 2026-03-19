@@ -100,13 +100,13 @@ const eventSlice = createSlice({
                 state.error = action.error.message || 'Failed to load event'
             })
             // טיפול במחיקה (בלי להפריע ל-isLoading הראשי)
-            .addCase(removeEvent.pending, (state) => {
-                state.isRemoving = true
-            })
-            .addCase(removeEvent.fulfilled, (state, action) => {
-                state.isRemoving = false
-                state.events = state.events.filter(c => c._id !== action.payload)
-            })
+            // .addCase(removeEvent.pending, (state) => {
+            //     state.isRemoving = true
+            // })
+            // .addCase(removeEvent.fulfilled, (state, action) => {
+            //     state.isRemoving = false
+            //     state.events = state.events.filter(c => c._id !== action.payload)
+            // })
             .addCase(addEvent.fulfilled, (state, action) => {
                 state.events.push(action.payload)
             })

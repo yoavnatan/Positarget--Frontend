@@ -173,7 +173,7 @@ export function AppHeader() {
 							<Link to="/portfolio">
 								<div className="info-item flex">
 									<h5>Portfolio</h5>
-									<h5 className="sum">${getPorfolioSum() || '0.00'}</h5>
+									<h5 className="sum">${getPorfolioSum().toFixed(2) || '0.00'}</h5>
 								</div>
 							</Link>
 							<Link to="/portfolio">

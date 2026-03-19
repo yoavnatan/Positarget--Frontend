@@ -29,6 +29,9 @@ export function OrderBook(market: Market) {
         loadOrderBooks();
     }, [market.id, selectedOutcomeIndex]);
 
+    useEffect(() => {
+        scrollToSpread();
+    }, [isBookOpen])
     async function loadOrderBooks() {
         if (!market.clobTokenIds) return;
 

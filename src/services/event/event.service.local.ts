@@ -26,9 +26,6 @@ const POLY_COMMENTS_API = isProduction ? PROXY + POLY_BASE + '/comments' : '/pol
 
 export const eventService = {
     query,
-    getById,
-    save,
-    remove,
     addEventMsg,
     searchEvents,
     // getEventsByIds,
@@ -39,6 +36,8 @@ export const eventService = {
     deleteEventMsg,
     fetchMarketById,
     getPerformance,
+    save,
+    remove,
 
 }
 
@@ -47,42 +46,9 @@ window.cs = eventService
 async function query(filterBy: FilterBy, category: string = 'all', page: number = 0) {
     const sortBy = filterBy.sortField || 'volume'
 
-    // אם זה GitHub Pages או Production – תמיד Polymarket
-    if (window.location.hostname.includes('github.io') || import.meta.env.PROD) {
-        return fetchEvents(category, page, sortBy)
-    }
-
-    // רק בלוקאלי ננסה backend
-    try {
-        const res = await fetch(`/api/event?txt=${filterBy.txt}&sortField=${sortBy}`)
-        if (!res.ok) throw new Error()
-        return await res.json()
-    } catch {
-        return fetchEvents(category, page, sortBy)
-    }
+    return fetchEvents(category, page, sortBy)
 }
-// async function getEventsByIds(eventIds: string[]): Promise<Event[]> {
-//     if (!eventIds || eventIds.length === 0) return [];
 
-//     try {
-//         const promises = eventIds.map(id =>
-//             fetch(`/poly-api/event/${id}`)
-//                 .then(res => res.ok ? res.json() : null)
-//                 .catch(() => null)
-//         );
-
-//         const rawEvents = await Promise.all(promises);
-
-//         // סינון תוצאות ריקות (במקרה ש-ID לא נמצא)
-//         const validRawEvents = rawEvents.filter(ev => ev !== null);
-
-//         // שימוש בפונקציית הנירמול שלך כדי להפוך אותם לטיפוס Event
-//         return processRawEvents(validRawEvents);
-//     } catch (err) {
-//         console.error("Failed to fetch events by IDs:", err);
-//         return [];
-//     }
-// }
 async function fetchEventById(eventId: string): Promise<Event | null> {
     // שינוי לחיבור פשוט
     const url = POLY_EVENTS_API + '/events/' + eventId;
@@ -143,117 +109,6 @@ async function deleteEventMsg(msgId: string) {
 
 //Demo Data
 
-// --- פונקציה מרכזית לשליפת ונירמול הנתונים ---
-export function getCategories(): string[] {
-    return [
-        "Politics", "Sports", "Crypto", "Finance", "Geopolitics",
-        "Earnings", "Tech", "Culture", "World", "Economy",
-        "Climate-science", "Mentions"
-    ]
-}
-// export async function fetchPolyeventData(): Promise<Event[]> {
-//     const categories = [
-//         "Politics", "Sports", "Crypto", "Finance", "Geopolitics",
-//         "Earnings", "Tech", "Culture", "World", "Economy",
-//         "Climate-science", "Mentions"
-//     ];
-
-//     try {
-//         const topEventsPromise = fetch('/poly-api/events?active=true&closed=false&limit=100&order=volume&ascending=false')
-//             .then(res => res.ok ? res.json() : []);
-
-//         const categoryPromises = categories.map(category =>
-//             fetch(`/poly-api/events?active=true&closed=false&limit=100&tag=${category}`)
-//                 .then(res => res.ok ? res.json() : [])
-//                 .catch(() => [])
-//         );
-
-//         const [topEvents, ...categoryResults] = await Promise.all([topEventsPromise, ...categoryPromises]);
-//         const combined = [...topEvents, ...categoryResults.flat()];
-
-//         if (!combined.length) return [];
-
-//         const uniqueMap = new Map<string, any>(); // מחיקת כפילויות
-//         combined.forEach(ev => {
-//             if (ev?.id) uniqueMap.set(ev.id, ev);
-//         });
-
-//         const uniqueRawEvents = Array.from(uniqueMap.values()); // החזרת מערך האירועים הייחודיים
-
-//         return uniqueRawEvents.map(ev => {
-//             const markets: Market[] = (ev.markets || []).map((m: any) => {
-//                 let outcomes = typeof m.outcomes === 'string' ? JSON.parse(m.outcomes) : m.outcomes;
-//                 let rawPrices = typeof m.outcomePrices === 'string' ? JSON.parse(m.outcomePrices) : m.outcomePrices;
-
-//                 // חילוץ מזהי התמונות עבור ספורט
-//                 let icons = [];
-//                 try {
-//                     icons = typeof m.groupItemIds === 'string' ? JSON.parse(m.groupItemIds) : (m.groupItemIds || []);
-//                 } catch (e) {
-//                     icons = [];
-//                 }
-
-//                 const outcomesList = Array.isArray(outcomes) ? outcomes : ["Yes", "No"];
-//                 const prices = Array.isArray(rawPrices)
-//                     ? rawPrices.map(p => Math.round(parseFloat(p) * 100))
-//                     : outcomesList.map(() => 50);
-
-//                 return {
-//                     id: m.id || ev.id,
-//                     question: m.question || ev.title,
-//                     outcomes: outcomesList,
-//                     outcomePrices: prices,
-//                     clobTokenIds: m.clobTokenIds || [],
-//                     icons: icons // שמירת המזהים לאייקונים
-//                 };
-//             });
-
-//             if (markets.length === 0) {
-//                 markets.push({
-//                     id: ev.id, question: ev.title, outcomes: ["Yes", "No"], outcomePrices: [50, 50], clobTokenIds: [], icons: []
-//                 });
-//             }
-
-//             const eventTags: string[] = Array.isArray(ev.tags)
-//                 ? ev.tags.map((t: any) => (typeof t === 'string' ? t : t.label)).filter(Boolean)
-//                 : [];
-
-//             const primaryCat = categories.find(c =>
-//                 eventTags.some(tag => tag.toLowerCase() === c.toLowerCase())
-//             ) || eventTags[0] || 'General';
-
-//             return {
-//                 _id: ev.id,
-//                 title: ev.title || ev.question,
-//                 description: ev.description || "",
-//                 imgUrl: ev.image || "https://polymarket.com/images/default.png",
-//                 status: ev.closed ? 'closed' : 'open',
-//                 endDate: ev.endDate,
-//                 category: primaryCat,
-//                 labels: Array.from(new Set([primaryCat, ...eventTags])),
-//                 markets: markets,
-//                 volume: Math.floor(ev.volume || 0),
-//                 msgs: [],
-//                 createdAt: ev.createdAt ? new Date(ev.createdAt).getTime() : Date.now()
-//             } as Event;
-//         }).sort(() => Math.random() - 0.5);
-
-//     } catch (err) {
-//         console.error("Fetch failed:", err);
-//         return [];
-//     }
-// }
-// --- הרצה ושמירה ---
-
-
-// (async () => {
-//     const demoEvents = await fetchPolyeventData();
-//     
-//     if (demoEvents.length > 0) {
-//         saveToStorage(STORAGE_KEY, demoEvents);
-//     }
-// })();
-
 
 const categories = [
     "Politics", "Sports", "Crypto", "Finance", "Geopolitics",
@@ -261,7 +116,6 @@ const categories = [
     "Climate-science", "Mentions"
 ];
 
-// הוספת ה-Interface של המרקט הגולמי שמגיע מה-API (לפי הדוקומנטציה)
 interface RawMarket {
     id: string;
     conditionId: string;
@@ -344,9 +198,7 @@ function processRawEvents(combined: any[], forcedCategory?: string): Event[] {
             ? ev.tags.map((t: any) => (typeof t === 'string' ? t : t.label)).filter(Boolean)
             : [];
 
-        // לוגיקת בחירת קטגוריה:
-        // אם הועברה קטגוריה ב-forcedCategory (מהלחיצה ב-UI), נשתמש בה.
-        // אחרת נחפש התאמה בתגיות או נשתמש בראשונה שקיימת.
+
         const primaryCat = (forcedCategory && forcedCategory.toLowerCase() !== 'all')
             ? forcedCategory
             : categories.find(c => eventTags.some(tag => tag.toLowerCase() === c.toLowerCase()))
@@ -372,28 +224,22 @@ function processRawEvents(combined: any[], forcedCategory?: string): Event[] {
     });
 }
 export async function fetchEvents(categoryName?: string, page: number = 0, sortBy: string = 'volume'): Promise<Event[]> {
-    const limit = 30;
+    // הגדלת הלימיט ל-100 כדי שיהיה לנו "בשר" למיון המקומי
+    const limit = 100;
     const currentOffset = page * limit;
 
     const CATEGORY_MAP: Record<string, string> = {
-        "politics": "2",
-        "crypto": "21",
-        "sports": "100639",
-        "economy": "100260",
-        "business": "100260",
-        "finance": "100260",
-        "science": "100267",
-        "climate": "100267",
-        "culture": "596",
-        "entertainment": "596",
-        "tech": "1401",
-        "geopolitics": "100265",
-        "world": "1",
-        "mentions": "100251",
-        "earnings": "100262"
+        "politics": "2", "sports": "100639", "crypto": "21", "finance": "120",
+        "geopolitics": "100265", "earnings": "100262", "tech": "1401",
+        "culture": "596", "world": "1", "economy": "100260",
+        "climate-science": "100267", "mentions": "100251"
     };
 
-    let url = `${POLY_EVENTS_API}/events?active=true&closed=false&limit=${limit}&offset=${currentOffset}&order=${sortBy === 'newest' ? 'created_at' : 'volume'}&ascending=false`;
+    // אסטרטגיה: תמיד נבקש מה-API מיון לפי volume כדי להימנע מאירועים ריקים
+    // אלא אם המשתמש ממש רוצה את ה-volume הכי נמוך (מה שלא סביר)
+    let apiOrder = 'volume';
+
+    let url = `${POLY_EVENTS_API}/events?active=true&closed=false&limit=${limit}&offset=${currentOffset}&order=${apiOrder}&ascending=false`;
 
     if (categoryName && categoryName !== 'all') {
         const tagId = CATEGORY_MAP[categoryName.toLowerCase()];
@@ -405,15 +251,31 @@ export async function fetchEvents(categoryName?: string, page: number = 0, sortB
         if (!res.ok) throw new Error(`API Error: ${res.status}`);
 
         const data = await res.json();
+        if (!data || data.length === 0) return [];
 
-        // שליחת categoryName כ-forcedCategory כדי שהאירועים יתויגו נכון ב-UI
         let events = processRawEvents(data, categoryName);
 
+        // סינון ראשוני: נוריד אירועים עם ווליום אפסי (למשל פחות מ-10 דולר)
+        // כדי שלא יציפו את ה-Newest אירועים מתים
+        events = events.filter(ev => ev.volume > 10);
+
+        const now = Date.now();
+
         if (sortBy.toLowerCase() === 'trending') {
-            const now = Date.now();
             events.sort((a, b) => {
-                const getHours = (time: any) => Math.max(1, (now - (typeof time === 'number' ? time : new Date(time).getTime())) / (1000 * 60 * 60));
+                const getHours = (time: any) => {
+                    const t = typeof time === 'number' ? time : new Date(time).getTime();
+                    return Math.max(1, (now - t) / (1000 * 60 * 60));
+                };
                 return (b.volume / getHours(b.createdAt)) - (a.volume / getHours(a.createdAt));
+            });
+        }
+        else if (sortBy.toLowerCase() === 'newest') {
+            // מיון לפי זמן יצירה - בגלל שמשכנו Top 100 Volume, נקבל את החדשים ביותר מתוך הפעילים
+            events.sort((a, b) => {
+                const timeA = typeof a.createdAt === 'number' ? a.createdAt : new Date(a.createdAt).getTime();
+                const timeB = typeof b.createdAt === 'number' ? b.createdAt : new Date(b.createdAt).getTime();
+                return timeB - timeA;
             });
         }
 
@@ -455,17 +317,33 @@ export async function searchEvents(searchTerm: string, limit: number = 200): Pro
  * מושכת היסטוריית מחירים עבור מרקט ספציפי
 רזולוציית הזמן (למשל '6h', '1h', '1d')
  */
-async function fetchMarketPriceHistory(clobTokenId: string, interval: string = ''): Promise<{ time: number, value: number }[]> {
-    if (!interval) interval = '';
-    // כאן היה /poly-clob/prices-history - שינינו למשתנה הדינמי
-    const url = `${POLY_CLOB_API}/prices-history?market=${clobTokenId}&interval=${interval}`;
+async function fetchMarketPriceHistory(clobTokenId: string, interval: string = '1h'): Promise<{ time: number, value: number }[]> {
+    // תיקון: אם ה-interval ריק, אנחנו מכריחים אותו להיות '1h' כדי למנוע שגיאת 400
+    const activeInterval = interval || '1h';
+
+    // בניית ה-URL - שים לב שמשתמשים ב-market= עבור ה-Token ID
+    const url = `${POLY_CLOB_API}/prices-history?market=${clobTokenId}&interval=${activeInterval}`;
 
     try {
         const res = await fetch(url);
-        if (!res.ok) throw new Error(`Status: ${res.status}`);
-        const data = await res.json();
-        if (!data || !data.history) return [];
 
+        // אם ה-API מחזיר שגיאה (כמו ה-400 שראינו)
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            console.error("Polymarket API Error details:", errorData);
+            throw new Error(`Status: ${res.status}`);
+        }
+
+        const data = await res.json();
+
+        // בדיקה שהמבנה תקין
+        if (!data || !data.history || !Array.isArray(data.history)) {
+            console.warn("No history data found in response for:", clobTokenId);
+            return [];
+        }
+
+        // מחזירים את האובייקטים כפי שהם (t ו-p)
+        // ה-Portfolio.tsx כבר יטפל בהכפלה ב-1000 (שניות למילי-שניות)
         return data.history.map((point: { t: number, p: number }) => ({
             time: point.t,
             value: point.p
@@ -582,11 +460,7 @@ async function fetchMarketById(marketId: string): Promise<Market | null> {
     }
 }
 
-
-
-
-
-
+// Performance Calculation
 export async function getPerformance(portfolio: any[], timeRange: string) {
     if (!portfolio || !portfolio.length) return { history: [], stats: null }
 

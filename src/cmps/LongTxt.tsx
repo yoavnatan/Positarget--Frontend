@@ -1,24 +1,31 @@
 import { useState } from "react";
 
-export function LongTxt({ txt, length = 90 }: { txt: string, length?: number }) {
+export function LongTxt({ txt = '', length = 90 }: { txt?: string, length?: number }) {
     const [isShowLong, setIsShowLong] = useState(false)
+
     function onToggleIsShowLong() {
-        setIsShowLong(isShowLong => !isShowLong)
+        setIsShowLong(prev => !prev)
     }
 
+    if (!txt) return null
+
     const isLongText = txt.length > length
-    const textToShow = isShowLong ? txt : (txt.substring(0, length))
+
+    // שימוש ב-substring בטוח כי וידאנו שיש txt
+    const textToShow = isShowLong ? txt : txt.substring(0, length)
+
     return (
         <section className="long-txt">
             <div className="bio">
-                {isShowLong && textToShow}
-                {!isShowLong && textToShow + '...'}
-                {isLongText &&
-                    <button onClick={onToggleIsShowLong}>
-                        {isShowLong ? '' : ' Show More'}
+                {textToShow}
+                {!isShowLong && isLongText && '...'}
+
+                {isLongText && (
+                    <button onClick={onToggleIsShowLong} className="toggle-btn">
+                        {isShowLong ? ' Show Less' : ' Show More'}
                     </button>
-                }
+                )}
             </div>
         </section>
-    );
+    )
 }

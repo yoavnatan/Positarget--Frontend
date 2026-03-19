@@ -1,7 +1,10 @@
 import { User, UserCred } from '../../types/user.type'
 import { httpService } from '../http.service'
+import { makeId } from '../util.service'
 
 const STORAGE_KEY_LOGGEDIN_USER = 'loggedinUser'
+const AUTH_ENDPOINT = 'auth'
+const USER_ENDPOINT = 'user'
 
 export const userService = {
 	login,
@@ -14,70 +17,102 @@ export const userService = {
 	getLoggedinUser,
 	saveLoggedinUser,
 	getEmptyCredentials,
+	getGuestCredentials,
 }
 
-function getUsers(): Promise<User[]> {
-	return httpService.get(`user`, null)
-}
-
-async function getById(userId: string): Promise<User> {
-	const user = await httpService.get(`user/${userId}`, null) as User
-	return user
-}
-
-function remove(userId: string) {
-	return httpService.delete(`user/${userId}`, null)
-}
-
-async function update(user: User) {
-	const updateUser: User = await httpService.put(`user/${user._id}`, user)
-
-	// When admin updates other user's details, do not update loggedinUser
-	const loggedinUser = getLoggedinUser() // Might not work because its defined in the main service???
-	if (loggedinUser._id === updateUser._id) saveLoggedinUser(updateUser)
-
-	return updateUser
-}
+// --- פונקציות AUTH (עובדות מול authService בבק) ---
 
 async function login(userCred: UserCred) {
-	const user: User = await httpService.post('auth/login', userCred)
-	if (user) return saveLoggedinUser(user)
+	try {
+		const user = await httpService.post<User>(`${AUTH_ENDPOINT}/login`, userCred)
+		if (user) return saveLoggedinUser(user)
+	} catch (err) {
+		console.error('Login failed:', err)
+		throw err
+	}
 }
 
 async function signup(userCred: UserCred) {
-
-	const user: User = await httpService.post('auth/signup', userCred)
-	return saveLoggedinUser(user)
+	try {
+		const user = await httpService.post<User>(`${AUTH_ENDPOINT}/signup`, userCred)
+		return saveLoggedinUser(user)
+	} catch (err) {
+		console.error('Signup failed:', err)
+		throw err
+	}
 }
 
 async function logout() {
-	sessionStorage.removeItem(STORAGE_KEY_LOGGEDIN_USER)
-	return await httpService.post('auth/logout')
+	try {
+		await httpService.post(`${AUTH_ENDPOINT}/logout`)
+		sessionStorage.removeItem(STORAGE_KEY_LOGGEDIN_USER)
+	} catch (err) {
+		console.error('Logout failed:', err)
+	}
 }
 
-function getLoggedinUser() {
+// --- פונקציות USER (עובדות מול userService בבק) ---
+
+async function getUsers(): Promise<User[]> {
+	return await httpService.get<User[]>(USER_ENDPOINT)
+}
+
+async function getById(userId: string): Promise<User> {
+	return await httpService.get<User>(`${USER_ENDPOINT}/${userId}`)
+}
+
+async function remove(userId: string) {
+	return await httpService.delete(`${USER_ENDPOINT}/${userId}`)
+}
+
+async function update(user: User) {
+	try {
+		const updatedUser = await httpService.put<User>(`${USER_ENDPOINT}/${user._id}`, user)
+
+		// עדכון המשתמש המחובר אם הוא זה שהתעדכן
+		const loggedinUser = getLoggedinUser()
+		if (loggedinUser && loggedinUser._id === updatedUser._id) {
+			saveLoggedinUser(updatedUser)
+		}
+		return updatedUser
+	} catch (err) {
+		console.error('Update failed:', err)
+		throw err
+	}
+}
+
+// --- פונקציות עזר (לוקאליות בפרונט) ---
+
+function getLoggedinUser(): User | null {
 	const userData = sessionStorage.getItem(STORAGE_KEY_LOGGEDIN_USER)
 	return userData ? JSON.parse(userData) : null
 }
 
-function saveLoggedinUser(user: User) {
-	user = {
-		_id: user._id,
-		firstName: user.firstName,
-		lastName: user.lastName,
-		email: user.email,
-		username: user.username,
-		imgUrl: user.imgUrl,
-		isAdmin: user.isAdmin,
-	}
-	sessionStorage.setItem(STORAGE_KEY_LOGGEDIN_USER, JSON.stringify(user))
-	return user
+function saveLoggedinUser(user: User): User {
+	// אנחנו מניחים שהשרת כבר הוריד את הסיסמה (Password) מהאובייקט
+	const userToSave = { ...user }
+	sessionStorage.setItem(STORAGE_KEY_LOGGEDIN_USER, JSON.stringify(userToSave))
+	return userToSave
 }
 
-function getEmptyCredentials() {
+function getEmptyCredentials(): UserCred {
+	return { username: '', password: '', email: '' }
+}
+
+async function getGuestCredentials() {
+
+	try {
+		const guestUser = await httpService.post('auth/guest')
+		return guestUser
+	} catch (err) {
+		console.error('Server guest failed, falling back to local', err)
+	}
+
+
 	return {
-		username: '',
-		password: '',
-		email: ''
+		username: 'guest_' + makeId(),
+		password: 'guest',
+		email: 'Guest'
 	}
 }
+

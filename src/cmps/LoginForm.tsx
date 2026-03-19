@@ -1,6 +1,7 @@
 import { userService } from "../services/user"
 import { useAppDispatch } from "../store/store.js"
 import { useForm } from "../customHooks/useForm"
+import { UserCred } from "../types/user.type";
 
 interface LoginFormProps {
     onLogin: (credentials: { username?: string; password: string; email?: string }) => void;
@@ -15,9 +16,18 @@ export function LoginForm({ onLogin, isSignup }: LoginFormProps) {
         onLogin(credentials)
     }
 
-    function onGuestMode() {
-        const guestCredentials = userService.getGuestCredentials()
-        onLogin(guestCredentials)
+    async function onGuestMode(ev: React.MouseEvent) {
+        if (ev) {
+            ev.preventDefault()
+            ev.stopPropagation()
+        }
+
+        try {
+            const guestCredentials = await userService.getGuestCredentials()
+            await onLogin(guestCredentials as UserCred)
+        } catch (err) {
+            console.error('Failed guest login:', err)
+        }
     }
 
     return (
