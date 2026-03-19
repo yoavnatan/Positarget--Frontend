@@ -31,25 +31,39 @@ export function Portfolio() {
         }
     }, [user?.portfolio, user?.cash, timeRange])
 
+    // הוסף את פונקציית העזר הזו מחוץ לקומפוננטה או בתוכה
+    const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+
     async function loadPortfolioData() {
         if (!user || !user.portfolio) return
-
         setIsLoading(true)
+
         try {
-            // 1. העשרת הפוזיציות בנתוני שוק
-            const enriched = await Promise.all(
-                user.portfolio.map(async (pos): Promise<EnrichedPosition> => {
+            const enriched: EnrichedPosition[] = []
+
+            // 1. טעינת נתונים אחד-אחד למניעת 429 (Too Many Requests) ב-GitHub Pages
+            for (const pos of user.portfolio) {
+                try {
                     const market = await eventService.fetchMarketById(pos.marketId)
                     if (market) {
                         const idx = market.outcomes.indexOf(pos.outcome)
-                        return { ...pos, question: market.question, currentPrice: market.outcomePrices[idx] }
+                        enriched.push({
+                            ...pos,
+                            question: market.question,
+                            currentPrice: market.outcomePrices[idx]
+                        })
+                    } else {
+                        enriched.push(pos)
                     }
-                    return pos
-                })
-            )
+                    await delay(150) // השהיה קריטית ל-CORS Proxy
+                } catch (err) {
+                    console.error(`Error fetching market ${pos.marketId}:`, err)
+                    enriched.push(pos)
+                }
+            }
             setEnrichedPortfolio(enriched)
 
-            // 2. חישוב ערכי Equity נוכחיים
+            // 2. חישוב ערכים נוכחיים
             let livePositionsValue = 0
             let totalCost = 0
             enriched.forEach(pos => {
@@ -64,11 +78,10 @@ export function Portfolio() {
             const totalPnl = livePositionsValue - totalCost
             const pnlPercent = totalCost > 0 ? (totalPnl / totalCost) * 100 : 0
 
-            // 3. משיכת היסטוריה (מהפונקציה הלוקלית שמעדכנת את GitHub Pages)
+            // 3. משיכת היסטוריה
             const performance = await eventService.getPerformance(user.portfolio, timeRange)
             const rawEvents: any[] = performance?.history || []
 
-            // 4. מיון כרונולוגי
             const sortedEvents = [...rawEvents].sort((a, b) => {
                 const tA = a.timestamp || a.time || 0
                 const tB = b.timestamp || b.time || 0
@@ -77,20 +90,20 @@ export function Portfolio() {
 
             const history: any[] = []
             let lastAddedTimestamp = 0
-            const THIRTY_MINUTES_MS = 30 * 60 * 1000 // הגדרת הדילול
+            const THIRTY_MINUTES_MS = 30 * 60 * 1000 // דילול חצי שעה
 
-            // --- נקודת התחלה (Cost Basis) ---
+            // --- נקודת התחלה: קריטית לצבע הגרף ---
             if (totalCost > 0) {
                 history.push({
                     name: 'start',
-                    date: 'Purchase',
+                    date: 'Purchase Price',
                     value: Number((totalCost + currentCash).toFixed(2))
                 })
             }
 
             const marketValues: Record<string, number> = {}
 
-            // 5. לופ בניית היסטוריה עם לוגיקת דילול
+            // 4. בניית נקודות הגרף
             sortedEvents.forEach((event, index) => {
                 const mId = event.marketId || 'default'
                 const val = event.value > 100 ? event.value / 100 : event.value
@@ -99,43 +112,33 @@ export function Portfolio() {
                 const rawTime = event.timestamp || event.time
                 const timestamp = rawTime < 10000000000 ? rawTime * 1000 : rawTime
 
-                // לוגיקת הדילול:
-                // אנחנו מכניסים נקודה רק אם עברו 30 דקות מהנקודה הקודמת שאישרנו.
-                // חריג: תמיד מאשרים את הנקודה האחרונה במערך כדי שהגרף יגיע עד הסוף.
+                // דילול
                 const isLastEvent = index === sortedEvents.length - 1
-                if (!isLastEvent && (timestamp - lastAddedTimestamp < THIRTY_MINUTES_MS)) {
-                    return
-                }
+                if (!isLastEvent && (timestamp - lastAddedTimestamp < THIRTY_MINUTES_MS)) return
 
                 const eventTime = new Date(timestamp)
-                if (eventTime.getFullYear() < 2024) return // הגנה מ-1970
+                if (eventTime.getFullYear() < 2024) return
 
-                lastAddedTimestamp = timestamp // מעדכנים את זמן הנקודה האחרונה שאושרה
-
+                lastAddedTimestamp = timestamp
                 const positionsValueAtTime = Object.values(marketValues).reduce((sum, v) => sum + v, 0)
-                const totalEquityAtTime = positionsValueAtTime + currentCash
 
                 history.push({
                     name: index.toString(),
                     date: eventTime.toLocaleDateString() + ' ' + eventTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    value: Number(totalEquityAtTime.toFixed(2))
+                    value: Number((positionsValueAtTime + currentCash).toFixed(2))
                 })
             })
 
-            // 6. נקודת LIVE סופית
-            const now = new Date()
+            // --- נקודת LIVE סופית ---
             history.push({
                 name: 'live',
-                date: now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                date: 'Now',
                 value: Number(liveTotalEquity.toFixed(2))
             })
 
-            // 7. ניקוי כפילויות תאריכים (ליתר ביטחון)
-            const uniqueHistory = history.filter((v, i, a) => a.findIndex(t => t.date === v.date) === i)
-
             setPerfData({
                 stats: { currentTotalValue: liveTotalEquity, totalPnl, pnlPercent },
-                history: uniqueHistory
+                history: history.filter((v, i, a) => a.findIndex(t => t.date === v.date) === i)
             })
 
         } catch (err) {
@@ -144,6 +147,17 @@ export function Portfolio() {
             setIsLoading(false)
         }
     }
+
+    // בתוך ה-return של הקומפוננטה, החלף את ה-chart-wrapper לזה:
+    <div className="chart-wrapper" style={{ width: '100%', height: '300px', minHeight: '300px', position: 'relative' }}>
+        {!isLoading && perfData?.history?.length > 0 ? (
+            <PortfolioChart data={perfData.history} />
+        ) : (
+            <div className="flex align-center justify-center" style={{ height: '100%', color: '#666' }}>
+                {isLoading ? "Fetching Market Data..." : "No data available"}
+            </div>
+        )}
+    </div>
     function onSell(ev: React.MouseEvent, eventId?: string, outcome?: string) {
         ev.stopPropagation()
         dispatch(setTradingDirection('sell'))
@@ -190,8 +204,8 @@ export function Portfolio() {
                     )}
                 </div>
 
-                <div className="chart-wrapper" style={{ position: 'relative' }}>
-                    <PortfolioChart data={perfData?.history || []} />
+                <div className="chart-wrapper" style={{ width: '100%', height: '300px', minHeight: '300px' }}>
+                    {perfData?.history?.length > 0 && <PortfolioChart data={perfData.history} />}
                 </div>
 
                 <div className="time-filters">
