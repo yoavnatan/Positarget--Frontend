@@ -246,7 +246,7 @@ footer {
         font-size: clamp(0.5rem, 80%, 1rem);
         display: inline-block;
         white-space: wrap;
-        max-width: 110px;
+        max-width: 105px;
         /* מונע מהטקסט לרדת שורה */
     }
 }

@@ -61,6 +61,9 @@ const eventSlice = createSlice({
         hasMore: true
     },
     reducers: {
+        setEvent: (state, action) => {
+            state.event = action.payload
+        }
 
     },
     extraReducers: (builder) => {
@@ -119,4 +122,5 @@ const eventSlice = createSlice({
     }
 })
 
+export const { setEvent } = eventSlice.actions
 export const eventReducer = eventSlice.reducer

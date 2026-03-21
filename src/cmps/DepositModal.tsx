@@ -17,6 +17,16 @@ export function DepositModal() {
         onConvertCurrency()
     }, [depositFields])
 
+    useEffect(() => {
+        function handleKeyDown(ev: KeyboardEvent) {
+            if (ev.key === 'Enter') {
+                handleDeposit(ev as unknown as React.MouseEvent)
+            }
+        }
+        window.addEventListener('keydown', handleKeyDown)
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    }, [convertedAmount])
+
     async function onConvertCurrency() {
         const converted = await convertToUsdc(depositFields.currency, depositFields.amount)
         if (converted >= 0) setConvertedAmount(converted)

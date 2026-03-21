@@ -8,7 +8,7 @@ import Delete from '../assets/svg/delete.svg?react'
 import { useAppDispatch, useAppSelector } from '../store/store'
 import { RootState } from '../store/store'
 import { setIsAuthShown, setModalType, setMsg } from '../store/slices/system.slice'
-import { loadEvent } from '../store/slices/event.slice'
+import { loadEvent, setEvent } from '../store/slices/event.slice'
 import { eventService } from '../services/event'
 import { Market, Msg } from '../types/event'
 import { PriceChart } from '../cmps/PriceChart'
@@ -81,6 +81,7 @@ export function EventDetails() {
   useEffect(() => {
     if (eventId) dispatch(loadEvent(eventId))
     // dispatch(setSelectedOutcome('Yes'))
+    return () => { dispatch(setEvent(null)) }
   }, [eventId])
 
   useEffect(() => {
