@@ -445,11 +445,10 @@ export function EventDetails() {
         <motion.header
           className="sticky-header"
           style={{
-            // אנחנו משתמשים ב-CSS Variable כדי להעביר את ה-Opacity ל-CSS
             '--border-opacity': borderOpacity
-          } as any} // 'as any' נדרש לפעמים ב-TS עבור CSS Variables
+          } as any}
         >
-          {/* 1. הדיב הפנימי החדש שמתכווץ */}
+          {/*  הדיב הפנימי החדש שמתכווץ */}
           <motion.div
             className="header-content-wrapper"
             style={{

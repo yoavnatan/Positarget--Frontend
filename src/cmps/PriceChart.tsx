@@ -11,7 +11,8 @@ export function PriceChart({ data, onHoverValue }: {
 }) {
     const wrapperRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
-
+    const isMobile = window.innerWidth <= 650
+    const chartHeight = isMobile ? 150 : 300
     useEffect(() => {
         if (!containerRef.current || !wrapperRef.current) return;
 
@@ -21,7 +22,7 @@ export function PriceChart({ data, onHoverValue }: {
         if (!data?.length) {
             const chart = createChart(root, {
                 width: wrapper.clientWidth,
-                height: 300,
+                height: chartHeight,
                 handleScroll: false,
                 handleScale: false,
                 rightPriceScale: {
@@ -105,7 +106,7 @@ export function PriceChart({ data, onHoverValue }: {
 
         const chart = createChart(root, {
             width: wrapper.clientWidth,
-            height: 300,
+            height: chartHeight,
             handleScroll: false,
             handleScale: false,
             rightPriceScale: {
@@ -151,9 +152,9 @@ export function PriceChart({ data, onHoverValue }: {
         const overlay = document.createElement('canvas');
         overlay.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:5;';
         overlay.width = wrapper.clientWidth * dpr;
-        overlay.height = 300 * dpr;
+        overlay.height = chartHeight * dpr;
         overlay.style.width = `${wrapper.clientWidth}px`;
-        overlay.style.height = `300px`;
+        overlay.style.height = `${chartHeight}px`;
         root.appendChild(overlay);
         const ctx = overlay.getContext('2d')!;
         ctx.scale(dpr, dpr);
@@ -359,9 +360,9 @@ export function PriceChart({ data, onHoverValue }: {
             const w = entries[0].contentRect.width;
             const newDpr = window.devicePixelRatio || 1;
             overlay.width = w * newDpr;
-            overlay.height = 300 * newDpr;
+            overlay.height = chartHeight * newDpr;
             overlay.style.width = `${w}px`;
-            overlay.style.height = `300px`;
+            overlay.style.height = `${chartHeight}px`;
             ctx.scale(newDpr, newDpr);
             chart.applyOptions({ width: w });
             chart.timeScale().fitContent();
@@ -384,7 +385,7 @@ export function PriceChart({ data, onHoverValue }: {
         <div
             ref={wrapperRef}
             className="chart-wrapper-fixed"
-            style={{ position: 'relative', width: '100%', height: 300, overflow: 'hidden' }}
+            style={{ position: 'relative', width: '100%', height: chartHeight, overflow: 'hidden' }}
         >
             <div
                 ref={containerRef}

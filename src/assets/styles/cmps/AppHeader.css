@@ -18,6 +18,10 @@
         grid-template-columns: subgrid;
         grid-column: 2;
 
+        @media (max-width:650px) {
+            gap: 0.5em;
+        }
+
     }
 
     & nav {
