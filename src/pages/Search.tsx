@@ -10,6 +10,7 @@ import Trending from '../assets/svg/trending.svg?react'
 import { useAppDispatch, useAppSelector } from "../store/store";
 import { loadEvents } from "../store/slices/event.slice";
 import { searchEvents } from "../services/event/event.service.local";
+import useClickOutside from "../customHooks/useClickOutside";
 
 export function Search() {
     const [searchParams] = useSearchParams();
@@ -24,6 +25,11 @@ export function Search() {
     const query = searchParams.get('q');
     const observer = useRef<IntersectionObserver | null>(null);
     const dispatch = useAppDispatch()
+    const searchRef = useRef<HTMLDivElement>(null);
+    const [isSearchOpen, setIsSearchOpen] = useState(false)
+
+    useClickOutside(searchRef, () => setIsSearchOpen(false), null);
+
 
     useEffect(() => {
         if (!query || query === '') {
@@ -140,11 +146,51 @@ export function Search() {
         navigate(`/search?${newParams.toString()}`);
     }
 
+    function onBrowse(ev: React.MouseEvent, sortBy?: string) {
+        ev.stopPropagation()
+        setIsSearchOpen(false)
+        navigate(`/search?q=&sort=${sortBy}`)
+    }
+
+    function onTopicClicked(ev: React.MouseEvent) {
+        ev.stopPropagation()
+        const topic = (ev.target as HTMLDivElement).innerText
+        setIsSearchOpen(false)
+        navigate(`/${topic}`)
+    }
 
 
     return (
         <section className="search-page">
             <div className="search-results">
+                <div className="search-container narrow-screen" ref={searchRef} onClick={() => setIsSearchOpen(true)}>
+                    <form onSubmit={(ev) => {
+                        ev.preventDefault()
+                        onSearch()
+                    }}>
+                        <input type="text" placeholder="Search" value={serachTerm} onChange={(ev) => hadnleSearchInput(ev.target.value)} className={`${isSearchOpen ? 'open' : ''}`} />
+                        <SearchIcon className="icon search medium" />
+                        <div className={`search-modal ${isSearchOpen ? 'open' : ''}`}>
+                            <header>Browse</header>
+                            <div className="browse-container">
+                                <div className="browse-item" onClick={(ev) => onBrowse(ev, 'Newest')}><New /> New</div>
+                                <div className="browse-item" onClick={(ev) => onBrowse(ev, 'Trending')}><Trending /> Trending</div>
+                                <div className="browse-item" onClick={(ev) => onBrowse(ev, 'Volume')} ><Popular /> Popular</div>
+                            </div>
+                            <header>Topics</header>
+                            <div className="topics-container">
+                                <div className="topic-item" onClick={(ev) => onTopicClicked(ev)}>Politics</div>
+                                <div className="topic-item" onClick={(ev) => onTopicClicked(ev)} >Sports</div>
+                                <div className="topic-item" onClick={(ev) => onTopicClicked(ev)}>Crypto</div>
+                                <div className="topic-item" onClick={(ev) => onTopicClicked(ev)}>Finance</div>
+                                <div className="topic-item" onClick={(ev) => onTopicClicked(ev)}>Climate</div>
+                                <div className="topic-item" onClick={(ev) => onTopicClicked(ev)}>Tech</div>
+                                <div className="topic-item" onClick={(ev) => onTopicClicked(ev)}>Economy</div>
+                                <div className="topic-item" onClick={(ev) => onTopicClicked(ev)}>Culture</div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
                 <h3 className="header">
                     {query ? (
                         <>Search results for: <span>{query}</span></>

@@ -1,27 +1,39 @@
-
 .app-footer {
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: space-between;
 
     min-height: 3.5rem;
 
-    padding: .8rem 1rem;
-    background-color: --var(clr4);
+    padding: .8rem 1.5rem;
+    background-color: var(--pt-white);
+    border-top: 1px solid var(--border-gray);
+    position: fixed;
+    bottom: 0;
 
-    & p {
-        margin: 0;
+    .icon-wrapper {
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+
+        &:hover {
+            background-color: transparent;
+
+            .icon {
+                color: var(--pt-black2);
+            }
+        }
     }
-    
-    > span {
-        font-size: .8em;
-        
-        &.local-services {
-            color: --var(clr1);
+
+    .icon-wrapper.active {
+
+        .icon,
+        h4 {
+            color: var(--pt-black2);
         }
-        
-        &.remote-services {
-            color: --var(clr5);
-        }
+    }
+
+    @media (max-width: 650px) {
+        display: flex;
     }
 }

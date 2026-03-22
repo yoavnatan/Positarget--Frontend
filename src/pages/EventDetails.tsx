@@ -50,6 +50,7 @@ export function EventDetails() {
   const marketOrderRef = useRef<HTMLDivElement | null>(null)
   const [hoveredValue, setHoveredValue] = useState<number | null>(null);
   const [periodStartValue, setPeriodStartValue] = useState<number | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
 
   console.log(tradingDirection)
   useEffect(() => {
@@ -438,143 +439,124 @@ export function EventDetails() {
   // 
 
   return (
-    <div className="event-details-page flex">
-      <section className="event-details container">
-        {/* <Link to="/event">Back to list</Link> */}
-        {event &&
-          <motion.header
-            className="sticky-header"
+    <div className={`event-details-page flex ${isDrawerOpen ? 'drawer-open' : ''}`}>      <section className="event-details container">
+      {/* <Link to="/event">Back to list</Link> */}
+      {event &&
+        <motion.header
+          className="sticky-header"
+          style={{
+            // אנחנו משתמשים ב-CSS Variable כדי להעביר את ה-Opacity ל-CSS
+            '--border-opacity': borderOpacity
+          } as any} // 'as any' נדרש לפעמים ב-TS עבור CSS Variables
+        >
+          {/* 1. הדיב הפנימי החדש שמתכווץ */}
+          <motion.div
+            className="header-content-wrapper"
             style={{
-              // אנחנו משתמשים ב-CSS Variable כדי להעביר את ה-Opacity ל-CSS
-              '--border-opacity': borderOpacity
-            } as any} // 'as any' נדרש לפעמים ב-TS עבור CSS Variables
+              scale: contentScale,
+              transformOrigin: 'top left', // מבטיח התכווצות לכיוון הפינה
+              width: '100%' // וודא שהוא תופס את כל הרוחב הזמין
+            }}
           >
-            {/* 1. הדיב הפנימי החדש שמתכווץ */}
-            <motion.div
-              className="header-content-wrapper"
-              style={{
-                scale: contentScale,
-                transformOrigin: 'top left', // מבטיח התכווצות לכיוון הפינה
-                width: '100%' // וודא שהוא תופס את כל הרוחב הזמין
-              }}
-            >
-              <div className="event-info flex">
-                <img src={event.imgUrl} alt={event.title} />
-                <div className="inner-info">
-                  <div className="event-labels">
-                    {event.labels.slice(0, 2).map(label => (
-                      <span key={label} className="event-label">{label}</span>
-                    ))}
-                  </div>
-                  <div className="event-title">
-                    <Link to={`/event/${event._id}`}>{event.title}</Link>
-                  </div>
+            <div className="event-info flex">
+              <img src={event.imgUrl} alt={event.title} />
+              <div className="inner-info">
+                <div className="event-labels">
+                  {event.labels.slice(0, 2).map(label => (
+                    <span key={label} className="event-label">{label}</span>
+                  ))}
+                </div>
+                <div className="event-title">
+                  <Link to={`/event/${event._id}`}>{event.title}</Link>
                 </div>
               </div>
-            </motion.div>
-          </motion.header>
-        }
-        <main>
-          <div className="options flex">
-            {event && event?.markets.map((market => (
-              <div key={market.id} className={`market ${activeMarket?.id === market.id ? 'active' : ''}`} onClick={() => setActiveMarket(market)}>
-
-                <div className="option-name">{getUniqueName(market, event.markets)}</div>
-              </div>
-            )))}
-          </div>
-          <div className="market-details">
-            {activeMarket && (
-              <>
-                {/* <pre>{JSON.stringify(activeMarket, null, 2)}</pre> */}
-              </>)}
-          </div>
-          <div className="chart-container">
-            <div className='current flex align-center' style={{ gap: '10px' }}>
-              <div className="flex align-center">
-                <NumberFlow
-                  value={display.val}
-                  format={{ maximumFractionDigits: 0 }}
-                  continuous={false}
-                  trend={true}
-                  className="ticker-display"
-                />
-                <span style={{ marginLeft: '4px', fontWeight: '600' }}>% chance</span>
-              </div>
-
-              {display.change && (
-                <div
-                  className="flex align-center"
-                  style={{
-                    color: display.change.isPos ? '#00aa5d' : '#ff4d4d',
-                    fontWeight: '600',
-                    fontSize: '0.8rem'
-                  }}
-                >
-                  {/* הוספת הסימן + או - מחוץ לטיקר כדי שלא ירצד */}
-                  <span style={{ marginInlineEnd: '5px', translate: '0 1px' }}>{display.change.isPos ? <DirArrow /> : <DirArrow style={{ rotate: '180deg' }} />}</span>
-
-                  <NumberFlow
-                    value={parseFloat(display.change.text.replace(/[+%-]/g, ''))}
-                    format={{
-                      maximumFractionDigits: 2,
-                      minimumFractionDigits: 2
-                    }}
-                    suffix="%"
-                    trend={true}
-                  />
-                </div>
-              )}
             </div>
+          </motion.div>
+        </motion.header>
+      }
+      <main>
+        <div className="options flex">
+          {event && event?.markets.map((market => (
+            <div key={market.id} className={`market ${activeMarket?.id === market.id ? 'active' : ''}`} onClick={() => setActiveMarket(market)}>
 
-            <PriceChart data={chartData} onHoverValue={setHoveredValue} />
-
-            <div className="controls">
-              <h4>$ {event?.volume.toLocaleString()} Vol.</h4>
-              <div className="buttons flex">
-                <h4 className={`${timeframe === '1h' ? "active" : ""}`} onClick={() => setTimeframe('1h')}>1H</h4>
-                <h4 className={`${timeframe === '6h' ? "active" : ""}`} onClick={() => setTimeframe('6h')}>6H</h4>
-                <h4 className={`${timeframe === '1d' ? "active" : ""}`} onClick={() => setTimeframe('1d')}>1D</h4>
-                <h4 className={`${timeframe === '1w' ? "active" : ""}`} onClick={() => setTimeframe('1w')}>1W</h4>
-                <h4 className={`${timeframe === 'all' ? "active" : ""}`} onClick={() => setTimeframe('all')}>MAX</h4>
-              </div>
+              <div className="option-name">{getUniqueName(market, event.markets)}</div>
             </div>
-          </div>
-
-          {activeMarket && <OrderBook {...activeMarket} />}
-          {activeMarket && <div className='market-description'>
-            <h3>Rules</h3>
-            <LongTxt txt={activeMarket?.description} />
-          </div>}
-          <div className="comments-section">
-
-            <h3>Comments ({comments.length})</h3>
-            <div className="add-comment">
-              <input
-                type="text"
-                placeholder="Add a comment..."
-                value={newMsg}
-                onChange={(e) => setNewMsg(e.currentTarget.value)}
-                onKeyDown={async (e) => {
-                  if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                    const newComment = newMsg;
-                    try {
-                      if (event) {
-                        const msg: Msg = await eventService.addEventMsg(event._id, newComment);
-                        setComments((comments) => [
-                          msg, ...comments
-                        ]);
-                        setNewMsg('')
-                      }
-                    } catch (err) {
-
-                      dispatch(setMsg({ txt: 'Cannot add comment', type: 'error' }));
-                    }
-                  }
-                }}
+          )))}
+        </div>
+        <div className="market-details">
+          {activeMarket && (
+            <>
+              {/* <pre>{JSON.stringify(activeMarket, null, 2)}</pre> */}
+            </>)}
+        </div>
+        <div className="chart-container">
+          <div className='current flex align-center' style={{ gap: '10px' }}>
+            <div className="flex align-center">
+              <NumberFlow
+                value={display.val}
+                format={{ maximumFractionDigits: 0 }}
+                continuous={false}
+                trend={true}
+                className="ticker-display"
               />
-              <button className="signup-link" disabled={!newMsg} onClick={async () => {
-                if (newMsg.trim()) {
+              <span style={{ marginLeft: '4px', fontWeight: '600' }}>% chance</span>
+            </div>
+
+            {display.change && (
+              <div
+                className="flex align-center"
+                style={{
+                  color: display.change.isPos ? '#00aa5d' : '#ff4d4d',
+                  fontWeight: '600',
+                  fontSize: '0.8rem'
+                }}
+              >
+                {/* הוספת הסימן + או - מחוץ לטיקר כדי שלא ירצד */}
+                <span style={{ marginInlineEnd: '5px', translate: '0 1px' }}>{display.change.isPos ? <DirArrow /> : <DirArrow style={{ rotate: '180deg' }} />}</span>
+
+                <NumberFlow
+                  value={parseFloat(display.change.text.replace(/[+%-]/g, ''))}
+                  format={{
+                    maximumFractionDigits: 2,
+                    minimumFractionDigits: 2
+                  }}
+                  suffix="%"
+                  trend={true}
+                />
+              </div>
+            )}
+          </div>
+
+          <PriceChart data={chartData} onHoverValue={setHoveredValue} />
+
+          <div className="controls">
+            <h4>$ {event?.volume.toLocaleString()} Vol.</h4>
+            <div className="buttons flex">
+              <h4 className={`${timeframe === '1h' ? "active" : ""}`} onClick={() => setTimeframe('1h')}>1H</h4>
+              <h4 className={`${timeframe === '6h' ? "active" : ""}`} onClick={() => setTimeframe('6h')}>6H</h4>
+              <h4 className={`${timeframe === '1d' ? "active" : ""}`} onClick={() => setTimeframe('1d')}>1D</h4>
+              <h4 className={`${timeframe === '1w' ? "active" : ""}`} onClick={() => setTimeframe('1w')}>1W</h4>
+              <h4 className={`${timeframe === 'all' ? "active" : ""}`} onClick={() => setTimeframe('all')}>MAX</h4>
+            </div>
+          </div>
+        </div>
+
+        {activeMarket && <OrderBook {...activeMarket} />}
+        {activeMarket && <div className='market-description'>
+          <h3>Rules</h3>
+          <LongTxt txt={activeMarket?.description} />
+        </div>}
+        <div className="comments-section">
+
+          <h3>Comments ({comments.length})</h3>
+          <div className="add-comment">
+            <input
+              type="text"
+              placeholder="Add a comment..."
+              value={newMsg}
+              onChange={(e) => setNewMsg(e.currentTarget.value)}
+              onKeyDown={async (e) => {
+                if (e.key === 'Enter' && e.currentTarget.value.trim()) {
                   const newComment = newMsg;
                   try {
                     if (event) {
@@ -589,49 +571,78 @@ export function EventDetails() {
                     dispatch(setMsg({ txt: 'Cannot add comment', type: 'error' }));
                   }
                 }
-              }}>Post</button>
-            </div>
-            <div className="comments-list">
-              {comments.length > 0 ? (
-                comments.map((comment: any) => {
-                  // חילוץ המזהה הייחודי לאוואטר
-                  const avatarId = comment.proxy_wallet || comment.id || comment.by._id
+              }}
+            />
+            <button className="signup-link" disabled={!newMsg} onClick={async () => {
+              if (newMsg.trim()) {
+                const newComment = newMsg;
+                try {
+                  if (event) {
+                    const msg: Msg = await eventService.addEventMsg(event._id, newComment);
+                    setComments((comments) => [
+                      msg, ...comments
+                    ]);
+                    setNewMsg('')
+                  }
+                } catch (err) {
 
-                  return (
-                    <div key={comment.id} className="comment-card flex">
-                      <div
-                        className="user-avatar"
-                        style={getAvatarStyle(avatarId)}
-                      >
-                      </div>
-
-                      <div className="comment-content">
-                        <div className="comment-header flex">
-                          <span className="user-name">{comment.profile?.name || comment.by.username}</span>
-                          <span className="comment-date">
-                            {timeAgo(comment.createdAt)}
-                          </span>
-                          {comment.by?._id && (user?._id === comment.by._id || user?.isAdmin) && <Delete className="delete-icon" onClick={() =>
-                            onDeleteMsg(comment._id)
-                          } />}
-                        </div>
-                        <p className="comment-text">{comment?.body || comment.txt}</p>
-
-                      </div>
-                    </div>
-                  )
-                })
-              ) : (
-                <p className="no-comments">No comments yet. Be the first to react!</p>
-              )}
-            </div>
+                  dispatch(setMsg({ txt: 'Cannot add comment', type: 'error' }));
+                }
+              }
+            }}>Post</button>
           </div>
-        </main>
-        {/* {event && <button onClick={() => { onAddEventMsg(event._id) }}>Add event msg</button>} */}
+          <div className="comments-list">
+            {comments.length > 0 ? (
+              comments.map((comment: any) => {
+                // חילוץ המזהה הייחודי לאוואטר
+                const avatarId = comment.proxy_wallet || comment.id || comment.by._id
 
-      </section>
+                return (
+                  <div key={comment.id} className="comment-card flex">
+                    <div
+                      className="user-avatar"
+                      style={getAvatarStyle(avatarId)}
+                    >
+                    </div>
 
-      <section className="trading-section container">
+                    <div className="comment-content">
+                      <div className="comment-header flex">
+                        <span className="user-name">{comment.profile?.name || comment.by.username}</span>
+                        <span className="comment-date">
+                          {timeAgo(comment.createdAt)}
+                        </span>
+                        {comment.by?._id && (user?._id === comment.by._id || user?.isAdmin) && <Delete className="delete-icon" onClick={() =>
+                          onDeleteMsg(comment._id)
+                        } />}
+                      </div>
+                      <p className="comment-text">{comment?.body || comment.txt}</p>
+
+                    </div>
+                  </div>
+                )
+              })
+            ) : (
+              <p className="no-comments">No comments yet. Be the first to react!</p>
+            )}
+          </div>
+        </div>
+      </main>
+      {/* {event && <button onClick={() => { onAddEventMsg(event._id) }}>Add event msg</button>} */}
+
+    </section>
+
+      <section
+        className={`trading-section container ${isDrawerOpen ? 'drawer-open' : 'drawer-closed'}`}
+        onClick={() => !isDrawerOpen ? setIsDrawerOpen(true) : null}
+      >
+        {isDrawerOpen && (
+          <button
+            className="drawer-close"
+            onClick={(e) => { e.stopPropagation(); setIsDrawerOpen(false) }}
+          >
+            ✕
+          </button>
+        )}
         <header className="trading-header flex justify-between align-center">
           <div className="trading-dirs flex">
             <div className={`trading-dir ${tradingDirection === 'buy' ? "active" : ""}`} onClick={() => dispatch(setTradingDirection('buy'))}>Buy</div>

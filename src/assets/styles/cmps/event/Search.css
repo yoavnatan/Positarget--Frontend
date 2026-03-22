@@ -204,3 +204,15 @@
         background-color: var(--pt-gray-light);
     }
 }
+
+@media (max-width: 650px) {
+    .search-results .header {
+        margin-top: 1em;
+    }
+}
+
+@media (min-width: 651px) {
+    .search-container.narrow-screen {
+        display: none;
+    }
+}

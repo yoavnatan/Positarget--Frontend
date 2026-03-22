@@ -7,7 +7,7 @@ interface SystemState {
         type: 'success' | 'error' | 'info' | null
     } | null
     isAuthShown: boolean
-    modalType: 'DEPOSIT' | 'AUTH' | null
+    modalType: 'DEPOSIT' | 'AUTH' | 'SIDE_MENU' | null
 }
 
 const initialState: SystemState = {

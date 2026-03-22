@@ -821,3 +821,72 @@
     align-items: center;
     /* Framer Motion יטפל ב-Scale מפה */
 }
+
+@media (max-width: 650px) {
+    .trading-section {
+        position: fixed;
+        top: auto;
+        bottom: 61px;
+        left: 0;
+        right: 0;
+        width: 100%;
+        z-index: 999;
+        border-radius: 16px 16px 0 0;
+        margin: 0;
+        overflow: hidden;
+        max-height: 95px;
+        transition: max-height 0.3s ease;
+
+        &.drawer-open {
+            max-height: 90dvh;
+            overflow-y: auto;
+        }
+
+        &.drawer-closed {
+            cursor: pointer;
+
+            header,
+            footer,
+            .money-btns,
+            .market-order,
+            .order-summary,
+            .limit-order,
+            .shares {
+                display: none;
+            }
+        }
+    }
+
+
+    .trading-select {
+        position: relative;
+        right: 50px;
+    }
+}
+
+
+@media (max-width: 650px) {
+    .drawer-close {
+        position: absolute;
+        top: 8px;
+        right: 12px;
+        background: none;
+        border: none;
+        font-size: 1.1rem;
+        cursor: pointer;
+        color: var(--clr-text);
+        opacity: 0.6;
+    }
+}
+
+@media (max-width: 650px) {
+    .event-details-page {
+        padding-bottom: 60px;
+    }
+}
+
+.event-details-page {
+    &.drawer-open {
+        padding-bottom: 50dvh;
+    }
+}

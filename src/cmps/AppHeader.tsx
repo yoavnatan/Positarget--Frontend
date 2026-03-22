@@ -7,6 +7,7 @@ import { useRef, useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import useClickOutside from '../customHooks/useClickOutside'
 import { getAvatarStyle } from '../services/util.service'
+import { createPortal } from 'react-dom'
 
 // Assets
 import logoImg from '/logo.png'
@@ -25,7 +26,7 @@ export function AppHeader() {
 	const dispatch = useAppDispatch()
 	const { user } = useAppSelector((state) => state.userModule)
 	const navigate = useNavigate()
-
+	const { isAuthShown, modalType } = useAppSelector((state) => state.systemModule)
 	const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
 	const [isNotificationsMenuOpen, setIsNotificationsMenuOpen] = useState(false)
 	const [isSearchOpen, setIsSearchOpen] = useState(false)
@@ -170,7 +171,7 @@ export function AppHeader() {
 
 					{user && (
 						<div className="user-info">
-							<Link to="/portfolio">
+							<Link className="" to="/portfolio">
 								<div className="info-item flex">
 									<h5>Portfolio</h5>
 									<h5 className="sum">${getPorfolioSum().toFixed(2) || '0.00'}</h5>
@@ -201,7 +202,12 @@ export function AppHeader() {
 								)}
 							</AnimatePresence>
 
-							<div className="img-container" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+							<div
+								className="img-container"
+								onMouseEnter={() => window.innerWidth > 650 ? handleMouseEnter() : null}
+								onMouseLeave={handleMouseLeave}
+								onClick={() => { if (window.innerWidth <= 650) dispatch(setModalType('SIDE_MENU')) }}
+							>
 								<div className="user-img" style={getAvatarStyle(user._id)}></div>
 								<Arrow className="icon arrow" />
 							</div>
@@ -243,6 +249,28 @@ export function AppHeader() {
 					<NavLink to={`/${"Geopolitics"}`}>Geopolitics</NavLink>
 				</nav>
 			</div>
+
+			{createPortal(
+				<AnimatePresence>
+					{modalType === 'SIDE_MENU' && (
+						<motion.aside
+							className="side-menu"
+							initial={{ x: '-100%' }}
+							animate={{ x: 0 }}
+							exit={{ x: '-100%' }}
+							transition={{ type: 'tween', duration: 0.28, ease: 'easeInOut' }}
+						>
+							<button className="close" onClick={() => dispatch(setModalType(null))}>✕</button>
+							<nav className="content">
+								<Link to={`user/${user?._id}`} onClick={() => dispatch(setModalType(null))}>{user?.username}</Link>
+								<button className="signup-link" onClick={() => dispatch(setModalType('DEPOSIT'))}>Deposit</button>
+								<button className="logout" onClick={onLogout}>Logout</button>
+							</nav>
+						</motion.aside>
+					)}
+				</AnimatePresence>,
+				document.body
+			)}
 		</header>
 	)
 }

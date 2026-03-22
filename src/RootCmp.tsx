@@ -24,6 +24,7 @@ import { Portfolio } from './pages/Portfolio'
 
 export function RootCmp() {
     const { isAuthShown, modalType } = useAppSelector((state) => state.systemModule)
+
     const dispatch = useAppDispatch()
 
     const closeAll = () => {
@@ -35,7 +36,6 @@ export function RootCmp() {
     return (
         <div className="main-container">
             <AnimatePresence>
-                {/* ניהול ה-Overlay תחת AnimatePresence */}
                 {modalType && (
                     <motion.div
                         key="app-overlay"
@@ -53,7 +53,6 @@ export function RootCmp() {
                         <LoginSignup />
                     </Modal>
                 )}
-
 
 
                 {modalType === 'DEPOSIT' && <DepositModal />}
