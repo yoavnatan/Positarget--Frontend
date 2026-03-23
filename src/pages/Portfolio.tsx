@@ -3,7 +3,7 @@ import { eventService } from "../services/event"
 import { useAppDispatch, useAppSelector } from "../store/store"
 import { Position } from "../types/user.type"
 import { useNavigate } from "react-router"
-import { setSelectedOutcome, setTradingDirection } from "../store/slices/user.slice"
+import { setSelectedOutcome, setTradingDirection, setTradingMethod } from "../store/slices/user.slice"
 import { setModalType } from "../store/slices/system.slice"
 import { PortfolioChart } from "../cmps/portfolioChart"
 
@@ -21,7 +21,7 @@ export function Portfolio() {
     const [perfData, setPerfData] = useState<any>(null)
     const [isLoading, setIsLoading] = useState(false)
     const [timeRange, setTimeRange] = useState<'1d' | '1w' | '1m' | 'all'>('1w')
-
+    console.log(user?.portfolio)
     useEffect(() => {
         if (user?.portfolio && user.portfolio.length > 0) {
             loadPortfolioData()
@@ -158,10 +158,11 @@ export function Portfolio() {
             </div>
         )}
     </div>
-    function onSell(ev: React.MouseEvent, eventId?: string, outcome?: string) {
+    function onSell(ev: React.MouseEvent, eventId?: string, outcome?: string, method?: 'market' | 'limit') {
         ev.stopPropagation()
         dispatch(setTradingDirection('sell'))
         dispatch(setSelectedOutcome(outcome || ''))
+        dispatch(setTradingMethod(method || 'market'))
         if (eventId) navigate(`/event/${eventId}`)
     }
 
@@ -225,7 +226,14 @@ export function Portfolio() {
             <div className="positions container">
                 <h3 className="section-title">Positions</h3>
                 <div className="positions-header">
-                    <div>Market</div><div>Outcome</div><div>Shares</div><div>Avg Price</div><div>Current Price</div><div>Value</div><div>P&L</div>
+                    <div>Market</div>
+                    <div>Order Type</div>
+                    <div>Outcome</div>
+                    <div>Shares</div>
+                    <div>Avg Price</div>
+                    <div>Current Price</div>
+                    <div>Value</div>
+                    <div>P&L</div>
                 </div>
 
                 <ul className="positions-list">
@@ -235,6 +243,7 @@ export function Portfolio() {
                         return (
                             <li key={`${position.marketId}-${position.outcome}`} className="position-raw">
                                 <div className="event-name" onClick={() => navigate(`/event/${position.eventId}`)}>{position.question}</div>
+                                <div>{position.orderType}</div>
                                 <div>{position.outcome}</div>
                                 <div>{position.shares?.toFixed(0)}</div>
                                 <div>{position.avgPrice.toFixed(2)}¢</div>
@@ -243,7 +252,7 @@ export function Portfolio() {
                                 <div style={{ color: pnl >= 0 ? '#00aa5d' : '#ff4d4d', fontWeight: 'bold' }}>
                                     {position.currentPrice ? `${(pnl / 100).toFixed(2)}$` : '--'}
                                 </div>
-                                <div className="sell-btn" onClick={(ev) => onSell(ev, position.eventId, position.outcome)}>Sell</div>
+                                <div className="sell-btn" onClick={(ev) => onSell(ev, position.eventId, position.outcome, position.orderType)}>Sell</div>
                             </li>
                         )
                     })}

@@ -16,6 +16,7 @@ interface UserState {
     selectedOutcome: string
     selectedMarketId: string | null
     tradingDirection?: 'buy' | 'sell'
+    tradingMethod: 'market' | 'limit'
 }
 
 const initialState: UserState = {
@@ -27,7 +28,8 @@ const initialState: UserState = {
     lastUser: null,
     selectedOutcome: 'Yes',
     selectedMarketId: null,
-    tradingDirection: 'buy'
+    tradingDirection: 'buy',
+    tradingMethod: 'market'
 }
 
 // --- Async Thunks ---
@@ -129,6 +131,9 @@ const userSlice = createSlice({
         },
         setTradingDirection(state, action: PayloadAction<'buy' | 'sell'>) {
             state.tradingDirection = action.payload
+        },
+        setTradingMethod(state, action: PayloadAction<'market' | 'limit'>) {
+            state.tradingMethod = action.payload
         }
     },
     extraReducers: (builder) => {
@@ -203,5 +208,5 @@ const userSlice = createSlice({
 
 })
 
-export const { increment, decrement, changeCount, setScore, setSelectedOutcome, setSelectedMarketId, setTradingDirection } = userSlice.actions
+export const { increment, decrement, changeCount, setScore, setSelectedOutcome, setSelectedMarketId, setTradingDirection, setTradingMethod } = userSlice.actions
 export const userReducer = userSlice.reducer

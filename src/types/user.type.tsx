@@ -21,6 +21,7 @@ export interface UserCred {
 }
 
 export type Position = {
+    orderType: 'limit' | 'market'
     eventId?: string
     marketId: string
     outcome: string

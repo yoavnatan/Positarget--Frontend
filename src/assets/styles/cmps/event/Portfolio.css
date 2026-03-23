@@ -5,7 +5,7 @@
 .position-raw,
 .positions-header {
     display: grid;
-    grid-template-columns: 30% repeat(6, 1fr);
+    grid-template-columns: 30% repeat(7, 1fr);
     gap: 10px;
     border-bottom: 1px solid var(--border-gray);
     max-height: min-content;

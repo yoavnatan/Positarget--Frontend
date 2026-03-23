@@ -873,6 +873,9 @@
     }
 }
 
+button.drawer-close {
+    display: none;
+}
 
 @media (max-width: 650px) {
     .drawer-close {
@@ -885,6 +888,10 @@
         cursor: pointer;
         color: var(--clr-text);
         opacity: 0.6;
+    }
+
+    button.drawer-close {
+        display: block;
     }
 }
 

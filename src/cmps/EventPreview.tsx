@@ -6,31 +6,31 @@ import { useAppDispatch, useAppSelector } from '../store/store';
 import { userService } from '../services/user';
 import { setMsg } from '../store/slices/system.slice';
 import { setSelectedMarketId, setSelectedOutcome, updateUser } from '../store/slices/user.slice';
-import React from 'react';
+import React, { useState } from 'react';
 
 export function EventPreview({ event }: { event: Event }) {
+    const [isImgLoaded, setIsImgLoaded] = useState(false)
+
     const dispatch = useAppDispatch()
     const navigate = useNavigate()
-    const mainMarket = event.markets?.[0]
-    const isBinary = mainMarket?.outcomes.includes('Yes') || mainMarket?.outcomes.includes('Up')
-    const isSingleMarket = event.markets.length === 1 && mainMarket
     const { user } = useAppSelector(state => state.userModule)
-    // פונקציית עזר לבדיקה אם מדובר בספורט לפי ה-Outcome הראשון
+
     const isSportMarket = (market: Market) => {
-        const text = market.outcomes[0]?.toLowerCase()
-        return !['yes', 'up', 'no', 'down'].includes(text)
+        const text = market.outcomes?.[0]?.toLowerCase()
+        return text && !['yes', 'up', 'no', 'down'].includes(text)
     }
 
     const formatPrice = (price: number | string) => {
         const numPrice = parseFloat(price.toString())
         if (isNaN(numPrice)) return '0%'
-        if (numPrice >= 0 && numPrice < 1) return '<1%'
+        if (numPrice >= 0 && numPrice <= 1) return '<1%'
+        if (numPrice >= 99) return '100%'
         return `${Math.round(numPrice)}%`
     }
 
     const getUniqueName = (market: Market, allMarkets: Market[]): string => {
         const questions = allMarkets.map(m => m.question || "")
-        if (questions.length <= 1) return market.outcomes[0]
+        if (questions.length <= 1) return market.outcomes[0] || 'Market'
         const titleWords = event.title.toLowerCase().split(' ')
         const wordArrays = questions.map(q => q.toLowerCase().replace(/\?|,/g, '').split(' '))
         const commonWords = wordArrays[0].filter((word: string) => {
@@ -42,7 +42,7 @@ export function EventPreview({ event }: { event: Event }) {
             const cleanWord = word.toLowerCase().replace(/\?|,/g, '')
             return !commonWords.includes(cleanWord) && !blacklist.includes(cleanWord)
         }).join(' ').replace(/\?/g, '').trim()
-        return unique || market.outcomes[0]
+        return unique || market.outcomes[0] || 'Market'
     }
 
     const getBtnClass = (outcome: string) => {
@@ -58,9 +58,8 @@ export function EventPreview({ event }: { event: Event }) {
         if (user) {
             const isFavorite = user.favoriteEvents?.includes(eventId);
             const updatedFavoriteEvents = isFavorite
-                ? user.favoriteEvents!.filter(id => id !== eventId) // הסרה
-                : [...(user.favoriteEvents || []), eventId];     // הוספה 
-
+                ? user.favoriteEvents!.filter(id => id !== eventId)
+                : [...(user.favoriteEvents || []), eventId];
 
             const updatedUser = { ...user, favoriteEvents: updatedFavoriteEvents };
             try {
@@ -71,35 +70,57 @@ export function EventPreview({ event }: { event: Event }) {
         }
     }
 
-    function onAnswerClicked(ev: React.MouseEvent, idx: number, marketId: string) {
+    function onAnswerClicked(ev: React.MouseEvent, idx: number, marketId: string, outcome: string) {
         ev.stopPropagation()
-        dispatch(setSelectedOutcome(mainMarket.outcomes[idx]))
+        dispatch(setSelectedOutcome(outcome))
         dispatch(setSelectedMarketId(marketId))
         navigate(`/event/${event._id}`)
     }
 
-    // החלטה כמה מרקטים להציג: אם הראשון הוא ספורט, נציג רק 1. אחרת (פוליטיקה/קריפטו) נציג עד 5.
-    const displayedMarkets = (mainMarket && isSportMarket(mainMarket))
-        ? event.markets.slice(0, 1)
-        : event.markets.slice(0, 5)
+    // --- לוגיקה חדשה: קודם כל מנקים מרקטים שבורים טכנית ---
+    const validMarkets = event.markets.filter(m => m.outcomes?.length >= 2 && m.outcomePrices?.length >= 1)
+
+    // --- עכשיו ממינים: אלו שביניהם יש מחיר "חי" (1-99) עולים למעלה ---
+    const sortedMarkets = [...validMarkets].sort((a, b) => {
+        const aIsActive = a.outcomePrices.some(p => parseFloat(p.toString()) > 1 && parseFloat(p.toString()) < 99) ? 1 : 0
+        const bIsActive = b.outcomePrices.some(p => parseFloat(p.toString()) > 1 && parseFloat(p.toString()) < 99) ? 1 : 0
+        return bIsActive - aIsActive // פעילים קודם
+    })
+
+    // המרקט הראשי יהיה הראשון מהרשימה הממוינת (או המקורי אם הכל ריק)
+    const currentMainMarket = sortedMarkets[0] || event.markets[0]
+    const isBinary = currentMainMarket?.outcomes.includes('Yes') || currentMainMarket?.outcomes.includes('Up')
+    const isSingleMarket = event.markets.length === 1
+
+    const displayedMarkets = (currentMainMarket && isSportMarket(currentMainMarket))
+        ? sortedMarkets.slice(0, 1)
+        : sortedMarkets.slice(0, 5)
 
     return (
         <article className="event-preview">
             <header>
                 <div className="event-info flex">
-                    <img src={event.imgUrl} alt={event.title} />
+                    <img
+                        src={event.imgUrl}
+                        alt={event.title}
+                        onLoad={() => setIsImgLoaded(true)}
+                        style={{
+                            opacity: isImgLoaded ? 1 : 0,
+                            transition: 'opacity 0.5s ease-in-out',
+                        }}
+                    />
                     <Link to={`/event/${event._id}`} className="event-title">{event.title}</Link>
 
-                    {isBinary && isSingleMarket && (
+                    {isBinary && isSingleMarket && currentMainMarket && (
                         <div className="odds">
                             <div className="pie">
                                 <PieChartWithPaddingAngle
-                                    yes={mainMarket.outcomePrices[0] || 0}
-                                    no={mainMarket.outcomePrices[1] || 0}
+                                    yes={currentMainMarket.outcomePrices[0] || 0}
+                                    no={currentMainMarket.outcomePrices[1] || 0}
                                 />
                             </div>
                             <div className="odds-info">
-                                <span className="number">{formatPrice(mainMarket.outcomePrices[0] || 0)}</span>
+                                <span className="number">{formatPrice(currentMainMarket.outcomePrices[0] || 0)}</span>
                                 <span className="text">chance</span>
                             </div>
                         </div>
@@ -108,18 +129,20 @@ export function EventPreview({ event }: { event: Event }) {
             </header>
 
             <main className="options">
-                {event.markets.length > 1 && !isSportMarket(mainMarket!) ? (
+                {sortedMarkets.length > 1 && currentMainMarket && !isSportMarket(currentMainMarket) ? (
                     <div className="multi-options">
                         {displayedMarkets.map((market) => (
                             <div key={market.id} className="option flex space-between">
-                                <span className="option-name" onClick={(ev) => onAnswerClicked(ev, 0, market.id)}>{getUniqueName(market, event.markets)}</span>
+                                <span className="option-name" onClick={(ev) => onAnswerClicked(ev, 0, market.id, market.outcomes[0])}>
+                                    {getUniqueName(market, sortedMarkets)}
+                                </span>
                                 <div className="market-btns flex">
                                     {market.outcomes.slice(0, 2).map((outcome, idx) => {
                                         const btnCls = getBtnClass(outcome)
                                         return (
                                             <div key={idx} className="btn-group flex">
                                                 {idx === 0 && <span className="price-label">{formatPrice(market.outcomePrices[idx])}</span>}
-                                                <button className={`action-btn ${btnCls}`} onClick={(ev) => onAnswerClicked(ev, idx, market.id)}>
+                                                <button className={`action-btn ${btnCls}`} onClick={(ev) => onAnswerClicked(ev, idx, market.id, outcome)}>
                                                     <span className="btn-text">{outcome}</span>
                                                 </button>
                                             </div>
@@ -130,15 +153,15 @@ export function EventPreview({ event }: { event: Event }) {
                         ))}
                     </div>
                 ) : (
-                    mainMarket && (
+                    currentMainMarket && (
                         <div className="binary-options flex">
-                            {mainMarket.outcomes.slice(0, 2).map((outcome, idx) => {
+                            {currentMainMarket.outcomes.slice(0, 2).map((outcome, idx) => {
                                 const btnCls = getBtnClass(outcome)
                                 const isSport = btnCls === 'sport'
                                 return (
                                     <div key={idx} className="btn-group justify-center">
-                                        {isSport && <span className="btn-price">{formatPrice(mainMarket.outcomePrices[idx])}</span>}
-                                        <button className={`action-btn ${btnCls}`} onClick={(ev) => onAnswerClicked(ev, idx, mainMarket.id)}>
+                                        {isSport && <span className="btn-price">{formatPrice(currentMainMarket.outcomePrices[idx])}</span>}
+                                        <button className={`action-btn ${btnCls}`} onClick={(ev) => onAnswerClicked(ev, idx, currentMainMarket.id, outcome)}>
                                             <span className="btn-text">{outcome}</span>
                                         </button>
                                     </div>
@@ -155,12 +178,16 @@ export function EventPreview({ event }: { event: Event }) {
                         <span className="label">Vol.</span>
                         <span className="value"> ${(event.volume || 0).toLocaleString()}</span>
                     </div>
-                    {(!user?.favoriteEvents || !user?.favoriteEvents.includes(event._id)) && <span className="category-tag"
-                        onClick={(ev) => saveToFavorites(ev, event._id)}
-                    ><IoBookmarkOutline /></span>}
-                    {user?.favoriteEvents && user?.favoriteEvents.includes(event._id) && <span className="category-tag"
-                        onClick={(ev) => saveToFavorites(ev, event._id)}
-                    ><IoBookmark className="icon full" /></span>}
+                    {(!user?.favoriteEvents || !user?.favoriteEvents.includes(event._id)) && (
+                        <span className="category-tag" onClick={(ev) => saveToFavorites(ev, event._id)}>
+                            <IoBookmarkOutline />
+                        </span>
+                    )}
+                    {user?.favoriteEvents && user?.favoriteEvents.includes(event._id) && (
+                        <span className="category-tag" onClick={(ev) => saveToFavorites(ev, event._id)}>
+                            <IoBookmark className="icon full" />
+                        </span>
+                    )}
                 </div>
             </footer>
         </article>

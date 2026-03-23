@@ -17,7 +17,7 @@ import { EventComment } from '../types/event'
 import { getAvatarStyle, timeAgo } from '../services/util.service'
 import * as Select from '@radix-ui/react-select'
 import { ChevronDownIcon } from '@radix-ui/react-icons'
-import { setSelectedMarketId, setSelectedOutcome, setTradingDirection, updateUser } from '../store/slices/user.slice'
+import { setSelectedMarketId, setSelectedOutcome, setTradingDirection, setTradingMethod, updateUser } from '../store/slices/user.slice'
 import { OrderBook } from '../cmps/OrderBook'
 import { LongTxt } from '../cmps/LongTxt'
 import { confirmAlert } from 'react-confirm-alert';
@@ -33,7 +33,7 @@ export function EventDetails() {
   const dispatch = useAppDispatch()
   const { eventId } = useParams()
   const { event } = useAppSelector((state) => state.eventModule)
-  const { user, selectedMarketId, tradingDirection } = useAppSelector((state: RootState) => state.userModule)
+  const { user, selectedMarketId, tradingDirection, tradingMethod } = useAppSelector((state: RootState) => state.userModule)
   const { selectedOutcome } = useAppSelector((state: RootState) => state.userModule)
   const [activeMarket, setActiveMarket] = useState<Market | null>(null)
   const [chartData, setChartData] = useState<{ time: number, value: number }[]>([]);
@@ -41,18 +41,19 @@ export function EventDetails() {
   const [comments, setComments] = useState<(EventComment | Msg)[] | []>([])
   const [msgs, setMsgs] = useState<Msg[]>([])
   const [newMsg, setNewMsg] = useState('')
-  const [tradingMethod, setTradingMethod] = useState<'market' | 'limit'>('market')
+  // const [tradingMethod, setTradingMethod] = useState<'market' | 'limit'>('market')
   // const [tradingDirection, setTradingDirection] = useState<'buy' | 'sell'>('buy')
   const [orderAmount, setOrderAmount] = useState<string>('')
   const [limitPrice, setLimitPrice] = useState<string>('')
   const [shares, setShares] = useState<number | ''>()
   let isSport = [activeMarket?.outcomes[0]?.toLowerCase(), activeMarket?.outcomes[1]?.toLowerCase()].every(outcome => !['yes', 'no', 'up', 'down'].includes(outcome || ''))
   const marketOrderRef = useRef<HTMLDivElement | null>(null)
+  const limitOrderRef = useRef<HTMLDivElement | null>(null)
+  const sharesOrderRef = useRef<HTMLDivElement | null>(null)
   const [hoveredValue, setHoveredValue] = useState<number | null>(null);
   const [periodStartValue, setPeriodStartValue] = useState<number | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
 
-  console.log(tradingDirection)
   useEffect(() => {
     if (activeMarket && activeMarket.clobTokenIds) {
       const tokenId = activeMarket.clobTokenIds[0];
@@ -76,6 +77,7 @@ export function EventDetails() {
       dispatch(setSelectedOutcome(''))
       dispatch(setSelectedMarketId(null))
       dispatch(setTradingDirection('buy'))
+      dispatch(setTradingMethod('market'))
     }
   }, [])
 
@@ -261,44 +263,77 @@ export function EventDetails() {
         type: 'error'
       }))
     }
-    // וולידציה של אינפוט (עם האנימציה)
-    if (!orderAmount || +orderAmount <= 0) {
-      return triggerShakeEffect()
+
+    if (tradingMethod === 'limit') {
+      if (!limitPrice || +limitPrice <= 0) {
+        return triggerShakeEffect()
+      }
+      if (!shares || +shares <= 0) {
+        return triggerShakeEffect()
+      }
+      if (tradingDirection === 'buy' && (+limitPrice >= priceInCents)) {
+        return dispatch(setMsg({ txt: 'The limit price must be below the current market price.', type: 'error' }))
+      } else if (tradingDirection === 'sell' && (+limitPrice <= priceInCents / 100)) {
+        return dispatch(setMsg({ txt: 'The limit price must be above the current market price.', type: 'error' }))
+      }
+      if (tradingDirection === 'buy') {
+        handleBuy(outcomeIdx)
+      }
+      else {
+        handleSell(outcomeIdx)
+      }
+    } else {
+      if (!orderAmount || +orderAmount <= 0) {
+        return triggerShakeEffect()
+      }
+      if (tradingDirection === 'buy') handleBuy(outcomeIdx)
+      else handleSell(outcomeIdx)
     }
 
-    if (tradingDirection === 'buy') handleBuy(outcomeIdx)
-    else handleSell(outcomeIdx)
   }
 
   // --- 2. לוגיקת קנייה ---
+  // --- 2. לוגיקת קנייה מעודכנת ---
   async function handleBuy(outcomeIdx: number) {
-    const priceInCents = activeMarket!.outcomePrices[outcomeIdx]
     const outcomeName = activeMarket!.outcomes[outcomeIdx]
-    const totalCost = +orderAmount // היוזר הזין 100 (דולר)
+    const marketPriceInCents = activeMarket!.outcomePrices[outcomeIdx]
 
-    // בדיקת יתרה
+    let totalCost: number
+    let sharesToBuy: number
+    let executionPrice: number
+
+    // הגדרת הערכים לפי שיטת המסחר שנבחרה ב-UI
+    if (tradingMethod === 'limit') {
+      executionPrice = +limitPrice
+      sharesToBuy = +(shares || 0)
+      totalCost = (executionPrice / 100) * sharesToBuy
+    } else {
+      executionPrice = marketPriceInCents
+      totalCost = +orderAmount
+      sharesToBuy = totalCost / (executionPrice / 100)
+    }
+
     if (!user?.cash || (totalCost > user.cash + 0.0001)) {
       return dispatch(setMsg({ txt: 'Insufficient balance', type: 'error' }))
     }
 
-    // החישוב הנכון: דולרים חלקי (מחיר בסנטים / 100)
-    // למשל: 100$ / 0.02$ = 5,000 מניות
-    const sharesToBuy = totalCost / (priceInCents / 100)
-
-    const msg = `You are going to spend $${totalCost} to buy ${sharesToBuy.toFixed(2)} shares of ${outcomeName}. Are you sure?`
+    const msg = `You are going to spend $${totalCost.toFixed(2)} to buy ${sharesToBuy.toFixed(2)} shares of ${outcomeName} at ${executionPrice}¢. Are you sure?`
 
     confirmOrder('Confirm Buy', msg, async () => {
+      // כאן השינוי הקריטי: חיפוש פוזיציה שזהה גם ב-ID, גם ב-Outcome וגם ב-Method
       const existingPosIdx = user!.portfolio?.findIndex(
-        p => p.marketId === activeMarket!.id && p.outcome === outcomeName
+        p => p.marketId === activeMarket!.id &&
+          p.outcome === outcomeName &&
+          p.orderType === tradingMethod // מונע איחוד של Limit עם Market
       )
 
       let updatedPortfolio = [...(user!.portfolio || [])]
 
       if (existingPosIdx !== -1 && existingPosIdx !== undefined) {
-        // עדכון פוזיציה קיימת: סוכמים מניות ומחשבים מחיר ממוצע חדש
+        // איחוד רק אם זה אותו סוג (למשל עוד קניית Market על פוזיציית Market קיימת)
         const existingPos = updatedPortfolio[existingPosIdx]
         const newTotalShares = existingPos.shares + sharesToBuy
-        const totalInvestment = (existingPos.shares * existingPos.avgPrice) + (sharesToBuy * priceInCents)
+        const totalInvestment = (existingPos.shares * existingPos.avgPrice) + (sharesToBuy * executionPrice)
 
         updatedPortfolio[existingPosIdx] = {
           ...existingPos,
@@ -306,13 +341,14 @@ export function EventDetails() {
           avgPrice: totalInvestment / newTotalShares
         }
       } else {
-        // יצירת פוזיציה חדשה
+        // יצירת שורה חדשה בפורטפוליו (כך שיהיו שורות נפרדות ל-Limit ול-Market)
         updatedPortfolio.push({
-          eventId: eventId,
+          eventId: eventId!,
           marketId: activeMarket!.id,
           outcome: outcomeName,
           shares: sharesToBuy,
-          avgPrice: priceInCents
+          avgPrice: executionPrice,
+          orderType: tradingMethod
         })
       }
 
@@ -325,25 +361,39 @@ export function EventDetails() {
   }
 
   // --- 3. לוגיקת מכירה ---
+  // --- 3. לוגיקת מכירה מעודכנת ---
   async function handleSell(outcomeIdx: number) {
-    const priceInCents = activeMarket!.outcomePrices[outcomeIdx]
     const outcomeName = activeMarket!.outcomes[outcomeIdx]
+    const marketPriceInCents = activeMarket!.outcomePrices[outcomeIdx]
 
-    const position = user?.portfolio?.find(p =>
-      p.marketId === activeMarket!.id && p.outcome === outcomeName
-    )
+    let sharesToSell: number
+    let executionPrice: number
 
-    const sharesToSell = +orderAmount // היוזר מזין כמה מניות למכור (למשל 5,000)
-
-    if (!position || position.shares < sharesToSell) {
-      return dispatch(setMsg({ txt: 'Not enough shares', type: 'error' }))
+    // קביעת ערכים לפי בחירת המשתמש ב-UI
+    if (tradingMethod === 'limit') {
+      executionPrice = +limitPrice
+      sharesToSell = +(shares || 0)
+    } else {
+      executionPrice = marketPriceInCents
+      sharesToSell = +orderAmount // ב-Market Sell האינפוט מייצג כמות מניות
     }
 
-    // החישוב הנכון: (כמות מניות * מחיר נוכחי בסנטים) / 100
-    // למשל: (5,000 * 2) / 100 = 100 דולר
-    const revenue = (sharesToSell * priceInCents) / 100
+    // כאן השינוי: מחפשים פוזיציה שמתאימה לסוג המסחר הנוכחי (Market או Limit)
+    const position = user?.portfolio?.find(p =>
+      p.marketId === activeMarket!.id &&
+      p.outcome === outcomeName &&
+      p.orderType === tradingMethod // <--- מוודא שמוכרים מהערימה הנכונה
+    )
 
-    const msg = `You are selling ${sharesToSell} shares for $${revenue.toFixed(2)}. Are you sure?`
+    if (!position || position.shares < sharesToSell) {
+      const msgTxt = tradingMethod === 'limit'
+        ? 'Not enough shares in your Limit positions'
+        : 'Not enough shares in your Market positions'
+      return dispatch(setMsg({ txt: msgTxt, type: 'error' }))
+    }
+
+    const revenue = (sharesToSell * executionPrice) / 100
+    const msg = `You are selling ${sharesToSell} shares from your ${tradingMethod} position at ${executionPrice}¢ for $${revenue.toFixed(2)}. Are you sure?`
 
     confirmOrder('Confirm Sell', msg, async () => {
       const updatedShares = position.shares - sharesToSell
@@ -352,15 +402,21 @@ export function EventDetails() {
         ...user!,
         cash: (user!.cash || 0) + revenue,
         portfolio: updatedShares > 0
-          ? user!.portfolio!.map(p => p.marketId === activeMarket!.id && p.outcome === outcomeName
-            ? { ...p, shares: updatedShares } : p)
-          : user!.portfolio!.filter(p => !(p.marketId === activeMarket!.id && p.outcome === outcomeName))
+          ? user!.portfolio!.map(p =>
+            // מעדכנים רק את הפוזיציה הספציפית שמתאימה לכל התנאים
+            p.marketId === activeMarket!.id && p.outcome === outcomeName && p.orderType === tradingMethod
+              ? { ...p, shares: updatedShares }
+              : p
+          )
+          : user!.portfolio!.filter(p =>
+            // אם נגמרו המניות, מסירים רק את הפוזיציה מהסוג הזה
+            !(p.marketId === activeMarket!.id && p.outcome === outcomeName && p.orderType === tradingMethod)
+          )
       }
 
       await saveUserUpdate(updatedUser)
     })
   }
-
 
   // --- פונקציית עזר לעדכון השרת והסטייט ---
   async function saveUserUpdate(updatedUser: User) {
@@ -379,9 +435,17 @@ export function EventDetails() {
   // --- 5. עזר ל-UI ---
   function triggerShakeEffect() {
     const el = marketOrderRef.current
+    const el1 = limitOrderRef.current
+    const el2 = sharesOrderRef.current
     if (el) {
       el.classList.add('shake')
       setTimeout(() => el.classList.remove('shake'), 500)
+    } else if (el1 && +limitPrice <= 0) {
+      el1.classList.add('shake')
+      setTimeout(() => el1.classList.remove('shake'), 500)
+    } else if (el2 && (shares && shares <= 0 || shares === '')) {
+      el2.classList.add('shake')
+      setTimeout(() => el2.classList.remove('shake'), 500)
     }
   }
 
@@ -650,7 +714,7 @@ export function EventDetails() {
           <div className="trading-method">
             <Select.Root
               value={tradingMethod}
-              onValueChange={(val) => setTradingMethod(val as 'market' | 'limit')}
+              onValueChange={(val) => dispatch(setTradingMethod(val as 'market' | 'limit'))}
             >
               <Select.Trigger className="trading-select radix-trigger">
 
@@ -736,14 +800,14 @@ export function EventDetails() {
             <>
               <div className="limit-order flex">
                 <h4>Limit Price</h4>
-                <div className="limit-input container flex">
+                <div className="limit-input container flex" ref={limitOrderRef}>
                   <div className="limit-btn" onClick={() => handleLimit(-1)}>-</div>
                   <input type="text" placeholder="0.0¢" value={limitPrice ? `${limitPrice}¢` : ''} onChange={handleInputChange} />
                   <div className="limit-btn" onClick={() => handleLimit(+1)}>+</div>
                 </div>
               </div>
 
-              <div className="shares flex">
+              <div className="shares flex" ref={sharesOrderRef}>
                 <h4>Shares</h4>
                 <input
                   type="text"
@@ -759,8 +823,8 @@ export function EventDetails() {
               </div>
 
               <div className="money-btns flex">
-                <button className="money-btn" onClick={() => setShares(prev => (Number(prev) || 0) - 100)}>-100</button>
-                <button className="money-btn" onClick={() => setShares(prev => (Number(prev) || 0) - 10)}>-10</button>
+                <button className="money-btn" onClick={() => setShares(prev => { const next = (Number(prev) || 0) - 100; return next > 0 ? next : prev || 0; })}>-100</button>
+                <button className="money-btn" onClick={() => setShares(prev => { const next = (Number(prev) || 0) - 10; return next > 0 ? next : prev || 0; })}>-10</button>
                 <button className="money-btn" onClick={() => setShares(prev => (Number(prev) || 0) + 10)}>+10</button>
                 <button className="money-btn" onClick={() => setShares(prev => (Number(prev) || 0) + 100)}>+100</button>
                 <button className="money-btn gradient" onClick={() => setShares(prev => (Number(prev) || 0) + 200)}>+200</button>
