@@ -1,4 +1,4 @@
-import { createChart, ColorType, LineSeries, ISeriesApi, UTCTimestamp } from 'lightweight-charts';
+import { createChart, ColorType, LineSeries, ISeriesApi, IChartApi, UTCTimestamp } from 'lightweight-charts';
 import { useEffect, useRef } from 'react';
 
 interface DataPoint {
@@ -6,13 +6,19 @@ interface DataPoint {
     value: number;
 }
 
-export function PriceChart({ data, onHoverValue }: {
-    data: { time: number; value: number }[]; onHoverValue?: (value: number | null) => void;
+export function PriceChart({ data, onHoverValue, newPoint }: {
+    data: { time: number; value: number }[]
+    onHoverValue?: (value: number | null) => void
+    newPoint?: { time: number; value: number } | null   // נקודה חדשה מהסוקט
 }) {
     const wrapperRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const seriesRef = useRef<ISeriesApi<'Line'> | null>(null)
+    const chartRef = useRef<IChartApi | null>(null)
     const isMobile = window.innerWidth <= 650
     const chartHeight = isMobile ? 150 : 300
+
+    // ── בונה את הגרף מחדש רק כש-data משתנה ──────────────────────────────
     useEffect(() => {
         if (!containerRef.current || !wrapperRef.current) return;
 
@@ -25,39 +31,19 @@ export function PriceChart({ data, onHoverValue }: {
                 height: chartHeight,
                 handleScroll: false,
                 handleScale: false,
-                rightPriceScale: {
-                    borderVisible: false,
-                    scaleMargins: { top: 0.1, bottom: 0.1 },
-                },
-                timeScale: {
-                    borderVisible: false,
-                    visible: false,
-                },
+                rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.1, bottom: 0.1 } },
+                timeScale: { borderVisible: false, visible: false },
                 layout: {
                     background: { type: ColorType.Solid, color: 'transparent' },
-                    textColor: '#919496',
-                    fontSize: 11,
-                    fontFamily: 'inherit',
-                    attributionLogo: false,
+                    textColor: '#919496', fontSize: 11, fontFamily: 'inherit', attributionLogo: false,
                 },
-                grid: {
-                    vertLines: { visible: false },
-                    horzLines: { visible: true, style: 4 },
-                },
-                crosshair: {
-                    vertLine: { visible: false },
-                    horzLine: { visible: false },
-                },
-                localization: {
-                    priceFormatter: (price: number) => `${price.toFixed(1)}%`,
-                },
+                grid: { vertLines: { visible: false }, horzLines: { visible: true, style: 4 } },
+                crosshair: { vertLine: { visible: false }, horzLine: { visible: false } },
+                localization: { priceFormatter: (price: number) => `${price.toFixed(1)}%` },
             });
 
             const series = chart.addSeries(LineSeries, {
-                color: 'transparent',
-                lineWidth: 2,
-                lastValueVisible: false,
-                priceLineVisible: false,
+                color: 'transparent', lineWidth: 2, lastValueVisible: false, priceLineVisible: false,
             });
 
             const now = Math.floor(Date.now() / 1000) as UTCTimestamp;
@@ -65,7 +51,6 @@ export function PriceChart({ data, onHoverValue }: {
                 { time: (now - 3600) as UTCTimestamp, value: 0 },
                 { time: now, value: 100 },
             ]);
-
             chart.timeScale().fitContent();
 
             const observer = new ResizeObserver((entries) => {
@@ -73,10 +58,7 @@ export function PriceChart({ data, onHoverValue }: {
             });
             observer.observe(wrapper);
 
-            return () => {
-                chart.remove();
-                observer.disconnect();
-            };
+            return () => { chart.remove(); observer.disconnect(); };
         }
 
         const formattedData: DataPoint[] = [...data]
@@ -109,40 +91,23 @@ export function PriceChart({ data, onHoverValue }: {
             height: chartHeight,
             handleScroll: false,
             handleScale: false,
-            rightPriceScale: {
-                borderVisible: false,
-                scaleMargins: { top: 0.1, bottom: 0.1 },
-            },
-            timeScale: {
-                borderVisible: false,
-                tickMarkFormatter: tickFormat,
-            },
+            rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.1, bottom: 0.1 } },
+            timeScale: { borderVisible: false, tickMarkFormatter: tickFormat },
             layout: {
                 background: { type: ColorType.Solid, color: 'transparent' },
-                textColor: '#919496',
-                fontSize: 11,
-                fontFamily: 'inherit',
-                attributionLogo: false,
+                textColor: '#919496', fontSize: 11, fontFamily: 'inherit', attributionLogo: false,
             },
-            grid: {
-                vertLines: { visible: false },
-                horzLines: { visible: true, style: 4 },
-            },
-            crosshair: {
-                vertLine: { color: '#919496', style: 2, labelVisible: false },
-                horzLine: { visible: false },
-            },
-            localization: {
-                priceFormatter: (price: number) => `${price.toFixed(1)}%`,
-            },
+            grid: { vertLines: { visible: false }, horzLines: { visible: true, style: 4 } },
+            crosshair: { vertLine: { color: '#919496', style: 2, labelVisible: false }, horzLine: { visible: false } },
+            localization: { priceFormatter: (price: number) => `${price.toFixed(1)}%` },
         });
 
+        chartRef.current = chart
+
         const series: ISeriesApi<'Line'> = chart.addSeries(LineSeries, {
-            color: 'transparent',
-            lineWidth: 2,
-            lastValueVisible: false,
-            priceLineVisible: false,
+            color: 'transparent', lineWidth: 2, lastValueVisible: false, priceLineVisible: false,
         });
+        seriesRef.current = series
 
         series.setData(formattedData);
         chart.timeScale().fitContent();
@@ -160,17 +125,7 @@ export function PriceChart({ data, onHoverValue }: {
         ctx.scale(dpr, dpr);
 
         const dot = document.createElement('div');
-        dot.style.cssText = `
-            position:absolute;
-            width:8px;height:8px;
-            background:#2962FF;
-            border-radius:50%;
-            pointer-events:none;
-            transform:translate(-50%,-50%);
-            z-index:10;
-            display:none;
-            box-shadow:0 0 0 3px rgba(41,98,255,0.25);
-        `;
+        dot.style.cssText = `position:absolute;width:8px;height:8px;background:#2962FF;border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);z-index:10;display:none;box-shadow:0 0 0 3px rgba(41,98,255,0.25);`;
         root.appendChild(dot);
 
         const styleTag = document.createElement('style');
@@ -179,32 +134,13 @@ export function PriceChart({ data, onHoverValue }: {
                 0% { transform: scale(1); opacity: 0.7; }
                 100% { transform: scale(3.5); opacity: 0; }
             }
-            .pulse-core {
-                position:absolute;
-                inset:0;
-                background:#2962FF;
-                border-radius:50%;
-            }
-            .pulse-ring {
-                position:absolute;
-                inset:0;
-                background:#2962FF;
-                border-radius:50%;
-                animation: pulse-ring 1.5s ease-out infinite;
-            }
+            .pulse-core { position:absolute; inset:0; background:#2962FF; border-radius:50%; }
+            .pulse-ring { position:absolute; inset:0; background:#2962FF; border-radius:50%; animation: pulse-ring 1.5s ease-out infinite; }
         `;
         document.head.appendChild(styleTag);
 
         const pulse = document.createElement('div');
-        pulse.style.cssText = `
-            position:absolute;
-            width:8px;height:8px;
-            border-radius:50%;
-            pointer-events:none;
-            transform:translate(-50%,-50%);
-            z-index:9;
-            display:none;
-        `;
+        pulse.style.cssText = `position:absolute;width:8px;height:8px;border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);z-index:9;display:none;`;
         pulse.innerHTML = `<div class="pulse-ring"></div><div class="pulse-core"></div>`;
         root.appendChild(pulse);
 
@@ -223,7 +159,6 @@ export function PriceChart({ data, onHoverValue }: {
 
         function drawChart(drawnUpTo: number, mouseX: number | null, isLastFrame = false) {
             ctx.clearRect(0, 0, overlay.width / dpr, overlay.height / dpr);
-
             const blueEnd = mouseX !== null ? Math.min(mouseX, drawnUpTo) : drawnUpTo;
 
             ctx.beginPath();
@@ -373,6 +308,8 @@ export function PriceChart({ data, onHoverValue }: {
         return () => {
             cancelAnimationFrame(animationFrame);
             chart.remove();
+            chartRef.current = null
+            seriesRef.current = null
             overlay.remove();
             dot.remove();
             pulse.remove();
@@ -380,6 +317,16 @@ export function PriceChart({ data, onHoverValue }: {
             observer.disconnect();
         };
     }, [data]);
+
+    // ── נקודה חדשה מהסוקט — ישירות על canvas, אפס רינדור של React ──────────
+    useEffect(() => {
+        if (!newPoint || !seriesRef.current || !chartRef.current) return
+        seriesRef.current.update({
+            time: newPoint.time as UTCTimestamp,
+            value: newPoint.value * 100,
+        })
+        chartRef.current.timeScale().fitContent()
+    }, [newPoint])
 
     return (
         <div

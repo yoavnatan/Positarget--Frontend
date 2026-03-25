@@ -1,3 +1,4 @@
+import { removeEvent } from '../../store/slices/event.slice'
 import { Event, EventComment, FilterBy, Market, Msg, Orderbook, OrderbookLevel, PolyOrderbookLevel, PolyOrderbookResponse } from '../../types/event'
 import { httpService } from '../http.service'
 
@@ -14,6 +15,8 @@ export const eventService = {
     fetchMarketPriceHistory,
     addEventMsg,
     deleteEventMsg,
+    remove,
+    save,
 }
 
 async function query(filterBy: FilterBy, category: string = 'all', page: number = 0): Promise<Event[]> {
@@ -158,3 +161,26 @@ async function deleteEventMsg(msgId: string): Promise<void> {
     }
 }
 
+
+
+async function remove(eventId: string): Promise<void> {
+    try {
+        await httpService.delete(`${BASE_ENDPOINT}/${eventId}`)
+    } catch (err) {
+        console.error(`Failed to remove event ${eventId}:`, err)
+        throw err
+    }
+}
+
+async function save(event: Event): Promise<Event> {
+    try {
+        if (event._id) {
+            return await httpService.put<Event>(`${BASE_ENDPOINT}/${event._id}`, event)
+        } else {
+            return await httpService.post<Event>(BASE_ENDPOINT, event)
+        }
+    } catch (err) {
+        console.error('Failed to save event:', err)
+        throw err
+    }
+}

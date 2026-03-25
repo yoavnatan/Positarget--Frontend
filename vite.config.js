@@ -5,7 +5,8 @@ import svgr from "vite-plugin-svgr";
 export default defineConfig(({ command }) => {
 	return {
 		// אם אנחנו ב-build (כלומר ל-GitHub Pages), השתמש בנתיב הריפו. אחרת בשורש.
-		base: command === 'build' ? '/Positarget--Frontend/' : '/',
+		// base: command === 'build' ? '/Positarget--Frontend/' : '/',
+		base: '/',
 
 		plugins: [react(), svgr()],
 		define: {

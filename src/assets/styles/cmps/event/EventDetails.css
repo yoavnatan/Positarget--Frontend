@@ -219,7 +219,7 @@
     flex-grow: 1;
 
     @media (max-width: 650px) {
-        max-width: 250px;
+        /* max-width: 250px; */
     }
 
     .comment-header {
