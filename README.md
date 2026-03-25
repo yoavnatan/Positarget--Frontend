@@ -132,8 +132,9 @@ npm run dev
 
 ---
 
+<div align="center">
 <img width="489" height="890" alt="image" src="https://github.com/user-attachments/assets/6889be23-8a33-4cf2-b695-6538be79d597" />
-
+</div>
 
 ## ⚙️ Environment Variables
 
